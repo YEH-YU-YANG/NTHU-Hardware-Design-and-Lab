@@ -23,3 +23,10 @@ These are the code and reports for all the hardware design experiments in the la
 ## Lab 3 - Clock Divider and LED Controller
 
 * Getting familiar with the clock divider and LED control on the FPGA demo board.
+  
+## Lab 4 - BCD Counters
+
+* Getting familiar with the 7-segment display and pushbuttons on the FPGA board.
+Note: Signals from pushbuttons should be processed by debouncing and one-pulse 
+converters properly.
+*  Getting familiar with the counter designs and finite-state machines in Verilog.
