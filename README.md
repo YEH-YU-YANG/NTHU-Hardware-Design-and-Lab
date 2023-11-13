@@ -30,3 +30,9 @@ These are the code and reports for all the hardware design experiments in the la
 Note: Signals from pushbuttons should be processed by debouncing and one-pulse 
 converters properly.
 *  Getting familiar with the counter designs and finite-state machines in Verilog.
+
+## Lab 5 - Vending Machine
+
+* Getting familiar with the modeling of finite state machines in Verilog.
+* Getting familiar with the FPGA design flow and the keyboard control of the demo
+board.
