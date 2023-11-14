@@ -1,9 +1,9 @@
 # NTHU-Hardware-Design-and-Lab
 
-Prof : C.T Huang
+Prof : C.T Huang <br>
 Semester : 2023 fall
 
-These are the code and reports for all the hardware design experiments in the lab.
+This repository aims to store codes and reports for all hardware design and lab homeworks.
 
 ## Lab 0 -  FPGA Tutorial and Test-Your-Own-FPGA Demo
 
