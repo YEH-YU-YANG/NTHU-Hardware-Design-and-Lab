@@ -14,7 +14,7 @@ These are the code and reports for all the hardware design experiments in the la
 
 * Getting familiar with basic Verilog behavior modeling
 
-code  : 70/70
+code  : 70/70 <br>
 report: 28.95/30
 
 ## Lab 2 -  Parameterized Ping-Pong Counter
@@ -23,14 +23,14 @@ report: 28.95/30
 * Practicing counter and FSM designs in Verilog.
 * Practicing memory data structure in Verilo
 
-code  : 70/70
+code  : 70/70 <br>
 report: 27.3/30
 
 ## Lab 3 - Clock Divider and LED Controller
 
 * Getting familiar with the clock divider and LED control on the FPGA demo board.
   
-code  : 70/70
+code  : 70/70 <br>
 report: 28.65/30
 
 ## Lab 4 - BCD Counters
@@ -40,11 +40,16 @@ Note: Signals from pushbuttons should be processed by debouncing and one-pulse
 converters properly.
 *  Getting familiar with the counter designs and finite-state machines in Verilog.
 
-code  : 70/70
+code  : 70/70 <br>
 report: 24.45/30
 
 ## Lab 5 - Vending Machine
 
 * Getting familiar with the modeling of finite state machines in Verilog.
 * Getting familiar with the FPGA design flow and the keyboard control of the demo
+board.
+
+## Lab 6: Digital Photo Frame and VGA Game
+
+*  Getting familiar with the VGA display, block RAM, and other IOs on the FPGA demo
 board.
