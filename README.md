@@ -49,6 +49,9 @@ report: 24.45/30
 * Getting familiar with the FPGA design flow and the keyboard control of the demo
 board.
 
+code  : 70/70 <br>
+report: 27.9/30
+
 ## Lab 6: Digital Photo Frame and VGA Game
 
 *  Getting familiar with the VGA display, block RAM, and other IOs on the FPGA demo
