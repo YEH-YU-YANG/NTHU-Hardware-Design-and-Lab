@@ -132,11 +132,11 @@ module lab7(
     
     
     /* -------------------------------------------------------------------------- */
-    /*                                 demo_music                                 */
+    /*                                 lightly_row                                 */
     /* -------------------------------------------------------------------------- */
     wire [31:0] music_freqL;
     wire [31:0] music_freqR;
-    demo_music lightly_row(
+    lightly_row music(
         .demo_ibeat(demo_ibeat),
         .helper_ibeat(helper_ibeat),
         .MODE(_mode),
@@ -213,7 +213,7 @@ module lab7(
     );
     
     wire [19:0] nums;
-    key_input_top_control kitc(
+    keyboard_input_top_control kitc(
         .HELPER_END(HELPER_END),
         .clk(clk),
         .clkDiv17(clkDiv17),
@@ -257,9 +257,10 @@ module lab7(
         .led(_led)
     );
 
+
 endmodule
 
-module key_input_top_control(
+module keyboard_input_top_control(
     input clk,
     input clkDiv17,
     input rst,
@@ -892,7 +893,7 @@ module volume_gen(
     end
 endmodule
 
-module demo_music (
+module lightly_row (
     input [11:0] demo_ibeat,
     input [11:0] helper_ibeat,
     input MODE,
