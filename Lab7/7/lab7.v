@@ -57,7 +57,7 @@ module lab7(
     input _volDOWN,   // BTND: Vol down
     inout PS2_DATA,   // Keyboard I/O
     inout PS2_CLK,    // Keyboard I/O
-    output reg [15:0] _led,       // LED: [15:9] key & [4:0] volume
+    output wire [15:0] _led,       // LED: [15:9] key & [4:0] volume
     output audio_mclk, // master clock
     output audio_lrck, // left-right clock
     output audio_sck,  // serial clock
@@ -247,35 +247,15 @@ module lab7(
     /* -------------------------------------------------------------------------- */
     /*                                     led                                    */
     /* -------------------------------------------------------------------------- */
-    reg [15:0] next_led;
-    always@(posedge clkDiv22) _led <= next_led;
-
-    always@(*) begin
-        next_led = 16'b0;
-        if(_mode == PLAY_MODE && _start) begin
-            case(music_freqR)
-                `lc,`c,`hc: next_led[15]=1;
-                `ld,`d,`hd: next_led[14]=1;
-                `le,`e,`he: next_led[13]=1;
-                `lf,`f,`hf: next_led[12]=1;
-                `lg,`g,`hg: next_led[11]=1;
-                `la,`a,`ha: next_led[10]=1;
-                `lb,`b,`hb: next_led[9] =1;
-                default: next_led = _led;
-            endcase
-            if(helper_ibeat==11'd511) next_led[15:9] = 7'b111_1111;
-        end
-        
-
-        case(volume)
-            0: next_led[4:0] = 5'b0;  
-            1: next_led[4:0] = {4'b0000,1'b1};  
-            2: next_led[4:0] = {3'b000,2'b11};  
-            3: next_led[4:0] = {2'b00,3'b111};  
-            4: next_led[4:0] = {1'b0,4'b1111};  
-            5: next_led[4:0] = {5'b1_1111};  
-        endcase
-    end
+    led_control lc(
+        .clk(clkDiv22),
+        .MODE(_mode),
+        .START(_start),
+        .music_freqR(music_freqR),
+        .helper_ibeat(helper_ibeat),
+        .volume(volume),
+        .led(_led)
+    );
 
 endmodule
 
@@ -1781,3 +1761,47 @@ module seven_segment(
     end
 endmodule
 
+module led_control(
+        input clk,
+        input MODE,
+        input START,
+        input [31:0] music_freqR,
+        input [11:0] helper_ibeat,
+        input [2:0] volume,
+        output reg [15:0] led
+    );
+
+    /* -------------------------------------------------------------------------- */
+    /*                                     led                                    */
+    /* -------------------------------------------------------------------------- */
+    always@(*) begin
+        led = 16'b0;
+
+        /* ------------------------------- helper mode ------------------------------ */
+        if(MODE == 1'b0 && START) begin
+            case(music_freqR)
+                `lc,`c,`hc: led[15]=1;
+                `ld,`d,`hd: led[14]=1;
+                `le,`e,`he: led[13]=1;
+                `lf,`f,`hf: led[12]=1;
+                `lg,`g,`hg: led[11]=1;
+                `la,`a,`ha: led[10]=1;
+                `lb,`b,`hb: led[9] =1;
+            endcase
+            if(helper_ibeat==11'd511) led[15:9] = 7'b111_1111;
+        end
+        /* -------------------------------------------------------------------------- */
+
+        /* ----------------------------- volume control ----------------------------- */
+        case(volume)
+            0: led[4:0] = 5'b0;  
+            1: led[4:0] = {4'b0000,1'b1};  
+            2: led[4:0] = {3'b000,2'b11};  
+            3: led[4:0] = {2'b00,3'b111};  
+            4: led[4:0] = {1'b0,4'b1111};  
+            5: led[4:0] = {5'b1_1111};  
+        endcase
+        /* -------------------------------------------------------------------------- */
+    end
+
+endmodule
