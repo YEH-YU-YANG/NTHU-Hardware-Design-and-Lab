@@ -117,14 +117,14 @@ module lab7(
    /* -------------------------------------------------------------------------- */
     wire [11:0] demo_ibeat;
     wire [11:0] helper_ibeat;
-    wire LOCK_ALL;
+    wire HELPER_END;
     player_control #(.LEN(511)) playerCtrl_00 ( 
         .clkDiv22(clkDiv22),
         .rst(rst_one_pulse),
         .play(_play), 
         .mode(_mode),         
         .start( _start),
-        .LOCK_ALL(LOCK_ALL),
+        .HELPER_END(HELPER_END),
         .demo_ibeat(demo_ibeat),
         .helper_ibeat(helper_ibeat)
     );
@@ -142,7 +142,7 @@ module lab7(
         .MODE(_mode),
         .PLAY(_play),
         .START(_start),
-        .LOCK_ALL(LOCK_ALL),
+        .HELPER_END(HELPER_END),
         .toneL(music_freqL),
         .toneR(music_freqR)
     ); 
@@ -214,7 +214,7 @@ module lab7(
     
     wire [19:0] nums;
     key_input_top_control kitc(
-        .LOCK_ALL(LOCK_ALL),
+        .HELPER_END(HELPER_END),
         .clk(clk),
         .clkDiv17(clkDiv17),
         .rst(rst_one_pulse),
@@ -291,7 +291,7 @@ module key_input_top_control(
     input START,
     input [31:0] music_freqR,
     input [31:0] music_freqL,
-    input LOCK_ALL,
+    input HELPER_END,
     output reg [31:0] freqL,
     output reg [31:0] freqR,
     output reg [19:0] seven_segment_nums
@@ -468,7 +468,7 @@ module key_input_top_control(
                 next_freqL = `silence;
                 next_freqR = `silence;
                 next_seven_segment_nums[19:0] = {`seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH};
-                if(!LOCK_ALL) begin
+                if(!HELPER_END) begin
                     case(key_num)
                         KEY_CODES_Q: begin
                             next_freqL = `hc;
@@ -630,7 +630,7 @@ module key_input_top_control(
                         // `silence: next_seven_segment_nums[9:0] = { `seven_segment_DASH, `seven_segment_DASH };
                     endcase
                     
-                    if(!LOCK_ALL && !inc) begin
+                    if(!HELPER_END && !inc) begin
                         case(music_freqR)
                             `lc,`c,`hc: begin
                                 if(isKeyInput &&(key_num==KEY_CODES_Q||key_num==KEY_CODES_A||key_num==KEY_CODES_Z)) begin
@@ -713,7 +713,7 @@ module player_control (
     input start,
     output reg [11:0] demo_ibeat,
     output reg [11:0] helper_ibeat,
-    output reg LOCK_ALL
+    output reg HELPER_END
     );
     
     parameter DEMONSTRATE_MODE = 1'b1;
@@ -768,7 +768,7 @@ module player_control (
 
     // next_helper_beat
     always @* begin
-        if(mode == PLAY_MODE && start == 1 && !LOCK_ALL) begin
+        if(mode == PLAY_MODE && start == 1 && !HELPER_END) begin
             if(helper_ibeat < LEN) next_helper_ibeat = helper_ibeat + 1; 
             else next_helper_ibeat = LEN;
         end
@@ -777,12 +777,12 @@ module player_control (
 
 
     /* -------------------------------------------------------------------------- */
-    /*                                  LOCK_ALL                                  */
+    /*                                  HELPER_END                                  */
     /* -------------------------------------------------------------------------- */
     always@(*) begin
-        if(rst) LOCK_ALL = 0;
-        else if(helper_ibeat==LEN) LOCK_ALL = 1;
-        else LOCK_ALL = 0;
+        if(rst) HELPER_END = 0;
+        else if(helper_ibeat==LEN) HELPER_END = 1;
+        else HELPER_END = 0;
     end
     
 endmodule
@@ -918,7 +918,7 @@ module demo_music (
     input MODE,
     input PLAY,
     input START,
-    input LOCK_ALL,
+    input HELPER_END,
 	output reg [31:0] toneL,
     output reg [31:0] toneR
     );
