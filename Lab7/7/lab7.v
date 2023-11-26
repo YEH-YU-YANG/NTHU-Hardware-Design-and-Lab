@@ -113,7 +113,7 @@ module lab7(
     onepulse ovoldown(.clk(clkDiv17),.signal(voldown_debounce),.op(voldown_one_pulse));
     
    /* -------------------------------------------------------------------------- */
-   /*                                    ibeat                                   */
+   /*                               player_control                               */
    /* -------------------------------------------------------------------------- */
     wire [11:0] demo_ibeat;
     wire [11:0] helper_ibeat;
@@ -212,7 +212,7 @@ module lab7(
         .clk(clk)
     );
     
-    wire [19:0] nums;
+    wire [19:0] seven_segment_nums;
     keyboard_input_top_control kitc(
         .HELPER_END(HELPER_END),
         .clk(clk),
@@ -228,7 +228,7 @@ module lab7(
         .music_freqL(music_freqL),
         .freqL(freqL),
         .freqR(freqR),
-        .seven_segment_nums(nums)
+        .seven_segment_nums(seven_segment_nums)
     );
 
     
@@ -238,7 +238,7 @@ module lab7(
     /* -------------------------------------------------------------------------- */
     seven_segment ss(
         .clk(clkDiv17),
-        .nums(nums),
+        .nums(seven_segment_nums),
         .DISPLAY(DISPLAY),
         .DIGIT(DIGIT)
     );
