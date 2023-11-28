@@ -113,23 +113,31 @@ module lab7(
     onepulse ovoldown(.clk(clkDiv17),.signal(voldown_debounce),.op(voldown_one_pulse));
     
    /* -------------------------------------------------------------------------- */
-   /*                               player_control                               */
+   /*                                  demo beat                                 */
    /* -------------------------------------------------------------------------- */
     wire [11:0] demo_ibeat;
-    wire [11:0] helper_ibeat;
-    wire HELPER_END;
-    player_control #(.LEN(511)) playerCtrl_00 ( 
+    demo_beat_control #(.LEN(511)) playerCtrl_00 ( 
         .clkDiv22(clkDiv22),
         .rst(rst_one_pulse),
-        .play(_play), 
         .mode(_mode),         
-        .start( _start),
-        .HELPER_END(HELPER_END),
-        .demo_ibeat(demo_ibeat),
-        .helper_ibeat(helper_ibeat)
+        .play(_play), 
+        .demo_ibeat(demo_ibeat)
     );
     
-    
+
+    /* -------------------------------------------------------------------------- */
+    /*                                 helper beat                                */
+    /* -------------------------------------------------------------------------- */
+    wire [11:0] helper_ibeat;
+    wire HELPER_END;
+    helper_beat_control #(.LEN(511)) playerCtrl_01 ( 
+        .clkDiv22(clkDiv22),
+        .rst(rst_one_pulse),
+        .mode(_mode),         
+        .start( _start),
+        .helper_ibeat(helper_ibeat),
+        .HELPER_END(HELPER_END)
+    );
     
     /* -------------------------------------------------------------------------- */
     /*                                 lightly_row                                 */
@@ -304,7 +312,7 @@ module keyboard_input_top_control(
     parameter KEY_CODES_B = 9'b0_0011_0010; // b => 32
     parameter KEY_CODES_N = 9'b0_0011_0001; // n => 31
     parameter KEY_CODES_M = 9'b0_0011_1010; // m => 3A
-    parameter noInput = 5'b1111;
+    parameter noInput = 9'b11111;
 
     
     /* ---------------- key_num、isKeyInput、key_num_2、isKeyInput_2 --------------- */
@@ -315,11 +323,14 @@ module keyboard_input_top_control(
 	reg [9:0] temp;
     integer i;
 
-	always@(*) begin
+    reg [6:0] input_nums;
+    reg [6:0] next_input_nums;
+        
+	always@(posedge clk) begin
 		isKeyInput   = 0;
 		isKeyInput_2 = 0;
-		if(!isKeyInput)   key_num    = noInput;
-		if(!isKeyInput_2) key_num_2  = noInput;
+		key_num    = noInput;
+		key_num_2  = noInput;
 
 		for(i=0;i<=64;i=i+1) begin
 			if( (key_num==noInput) && key_down[i] ) begin
@@ -365,7 +376,6 @@ module keyboard_input_top_control(
 
 
     /* --------------------------- seven_segement_nums -------------------------- */
-    
     reg [19:0] next_seven_segment_nums;
     always@(posedge clkDiv17,posedge rst) begin
         if(rst) seven_segment_nums <= {`seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH};
@@ -413,32 +423,30 @@ module keyboard_input_top_control(
                 next_seven_segment_nums[19:0] = {`seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH, `seven_segment_DASH};
                 if(PLAY) begin
                     case(music_freqR)
-                        `lc: next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_3 };
-                        `ld: next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_3 };
-                        `le: next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_3 };
-                        `lf: next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_3 };
-                        `lg: next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_3 };
-                        `la: next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_3 };
-                        `lb: next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_3 };
+                        `lc:     next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_3 };
+                        `ld:     next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_3 };
+                        `le:     next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_3 };
+                        `lf:     next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_3 };
+                        `lg:     next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_3 };
+                        `la:     next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_3 };
+                        `lb:     next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_3 };
                         
-                        `c: next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_4 };
-                        `d: next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_4 }; 
-                        `e: next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_4 };
-                        `f: next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_4 };
-                        `g: next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_4 };
-                        `a: next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_4 };
-                        `b: next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_4 };
+                        `c:      next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_4 };
+                        `d:      next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_4 }; 
+                        `e:      next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_4 };
+                        `f:      next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_4 };
+                        `g:      next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_4 };
+                        `a:      next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_4 };
+                        `b:      next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_4 };
 
-                        `hc: next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_5 };
-                        `hd: next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_5 };
-                        `he: next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_5 };
-                        `hf: next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_5 };
-                        `hg: next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_5 };
-                        `ha: next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_5 };
-                        `hb: next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_5 };
+                        `hc:     next_seven_segment_nums[9:0] = { `seven_segment_C, `seven_segment_5 };
+                        `hd:     next_seven_segment_nums[9:0] = { `seven_segment_D, `seven_segment_5 };
+                        `he:     next_seven_segment_nums[9:0] = { `seven_segment_E, `seven_segment_5 };
+                        `hf:     next_seven_segment_nums[9:0] = { `seven_segment_F, `seven_segment_5 };
+                        `hg:     next_seven_segment_nums[9:0] = { `seven_segment_G, `seven_segment_5 };
+                        `ha:     next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_5 };
+                        `hb:     next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_5 };
                         default: next_seven_segment_nums[9:0] = seven_segment_nums[9:0];
-                    
-                        // `silence: next_seven_segment_nums[9:0] = { `seven_segment_DASH, `seven_segment_DASH };
                     endcase
                 end
                 else begin
@@ -581,6 +589,9 @@ module keyboard_input_top_control(
                     endcase
 
                 end
+                /* -------------------------------------------------------------------------- */
+                /*                                helper 七段顯示器                            */
+                /* -------------------------------------------------------------------------- */
                 if(START) begin
                     next_seven_segment_nums[19:10] = seven_segment_nums[19:10]; 
                     case(music_freqR)
@@ -608,9 +619,8 @@ module keyboard_input_top_control(
                         `ha: next_seven_segment_nums[9:0] = { `seven_segment_A, `seven_segment_5 };
                         `hb: next_seven_segment_nums[9:0] = { `seven_segment_B, `seven_segment_5 };
                         default: next_seven_segment_nums[9:0] = seven_segment_nums[9:0];
-                        // `silence: next_seven_segment_nums[9:0] = { `seven_segment_DASH, `seven_segment_DASH };
                     endcase
-                    
+                
                     if(!HELPER_END && !inc) begin
                         case(music_freqR)
                             `lc,`c,`hc: begin
@@ -676,26 +686,23 @@ module keyboard_input_top_control(
                     next_seven_segment_nums[14:10] = next_score % 10;
 
                     if(!isKeyInput) inc = 0;
-                end
-                
+                end     
             end
         endcase        
     end
     /* -------------------------------------------------------------------------- */
 
+
 endmodule
 
 
-module player_control (
+module demo_beat_control (
     input clkDiv22,
 	input rst,  
     input play,      // SW0: Play/Pause
     input mode,      // SW15: Mode
-    input start,
-    output reg [11:0] demo_ibeat,
-    output reg [11:0] helper_ibeat,
-    output reg HELPER_END
-    );
+    output reg [11:0] demo_ibeat
+);
     
     parameter DEMONSTRATE_MODE = 1'b1;
     parameter PLAY_MODE        = 1'b0;
@@ -719,9 +726,22 @@ module player_control (
         if(mode==DEMONSTRATE_MODE && play) next_demo_ibeat = (demo_ibeat + 1 < LEN) ? (demo_ibeat + 1) : 0;
         else next_demo_ibeat = demo_ibeat; 
     end
-    
 
+endmodule
+
+module helper_beat_control (
+    input clkDiv22,
+	input rst,  
+    input mode,      // SW15: Mode
+    input start,
+    output reg [11:0] helper_ibeat,
+    output reg HELPER_END
+);
     
+    parameter DEMONSTRATE_MODE = 1'b1;
+    parameter PLAY_MODE        = 1'b0;
+    parameter LEN = 4095;
+
     /* -------------------------------------------------------------------------- */
     /*                                helper_ibeat                                */
     /* -------------------------------------------------------------------------- */
@@ -829,11 +849,11 @@ module note_gen(
             end
 
 
-    /* -------------------------------------------------------------------------- */
-    /*                                   volume                                   */
-    /* -------------------------------------------------------------------------- */
     // Assign the amplitude of the note
     // Volume is controlled here
+    /* -------------------------------------------------------------------------- */
+    /*                                 audio_left                                 */
+    /* -------------------------------------------------------------------------- */
     always@(*) begin
         if(note_div_left == 22'd1) audio_left = 16'h0000;
         else begin
@@ -848,6 +868,9 @@ module note_gen(
         end
     end
 
+    /* -------------------------------------------------------------------------- */
+    /*                                 audio_right                                */
+    /* -------------------------------------------------------------------------- */
     always@(*) begin
         if(note_div_right == 22'd1) audio_right = 16'h0000;
         else begin
@@ -864,6 +887,7 @@ module note_gen(
     
 endmodule
 
+
 module volume_gen(
     input clk,
     input rst,
@@ -875,12 +899,18 @@ module volume_gen(
 
     reg [2:0] v;
     reg [2:0] next_v;
-
+    
+    /* -------------------------------------------------------------------------- */
+    /*                                   volume                                   */
+    /* -------------------------------------------------------------------------- */
     always@(*) begin
         if(isMute) volume = 3'd0;
         else volume = v;
     end
 
+    /* -------------------------------------------------------------------------- */
+    /*                                      v                                     */
+    /* -------------------------------------------------------------------------- */
     always@(posedge clk,posedge rst) begin
         if(rst) v <= 3'd3;
         else  v <= next_v;
@@ -892,6 +922,7 @@ module volume_gen(
         else next_v = v;
     end
 endmodule
+
 
 module lightly_row (
     input [11:0] demo_ibeat,
@@ -1770,15 +1801,15 @@ module led_control(
         input [11:0] helper_ibeat,
         input [2:0] volume,
         output reg [15:0] led
-    );
+);
 
     /* -------------------------------------------------------------------------- */
-    /*                                     led                                    */
+    /*                                 led control                                */
     /* -------------------------------------------------------------------------- */
     always@(*) begin
         led = 16'b0;
 
-        /* ------------------------------- helper mode ------------------------------ */
+        /* ---------------------------- Play mode helper ---------------------------- */
         if(MODE == 1'b0 && START) begin
             case(music_freqR)
                 `lc,`c,`hc: led[15]=1;
@@ -1793,7 +1824,8 @@ module led_control(
         end
         /* -------------------------------------------------------------------------- */
 
-        /* ----------------------------- volume control ----------------------------- */
+
+        /* ------------------------------- volume led ------------------------------- */
         case(volume)
             0: led[4:0] = 5'b0;  
             1: led[4:0] = {4'b0000,1'b1};  
