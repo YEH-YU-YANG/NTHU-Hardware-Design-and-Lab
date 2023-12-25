@@ -62,3 +62,8 @@ board.
 
 ## Lab 7: Piano Helper
 *  Getting familiar with the control of the audio peripheral Pmod I2S2.
+
+## Lab 8: Autonomous Kar
+* Getting familiar with the Pmod connectors for external devices
+* Getting familiar with the 3-way track sensor and ultrasonic sensor
+* Learning to control typical DC motors via PWM signals
