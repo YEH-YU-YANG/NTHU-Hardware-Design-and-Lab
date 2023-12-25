@@ -57,5 +57,8 @@ report: 27.9/30
 *  Getting familiar with the VGA display, block RAM, and other IOs on the FPGA demo
 board.
 
+* code  : 70/70 <br>
+  report: 29.55/30
+
 ## Lab 7: Piano Helper
 *  Getting familiar with the control of the audio peripheral Pmod I2S2.
