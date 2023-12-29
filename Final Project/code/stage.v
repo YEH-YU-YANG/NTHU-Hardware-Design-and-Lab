@@ -1,5 +1,7 @@
 `define WALL_COLOR 12'hDCD 
 `define BACK_GROUND_COLOR 12'h0FF 
+`define FLOOR_COLOR 12'h940
+`define DOOR_COLOR 12'h000
 
 module stage_top_control(
     input clk,
@@ -68,8 +70,8 @@ module stage1_rgb_gen(
 
         // wall
         if(120<=x && x<=220 && 155<=y && y<=220) {vgaR, vgaG, vgaB} = `WALL_COLOR;
-        if(220<=x && x<=250 && 15<=y && y<=75) {vgaR, vgaG, vgaB}   = `WALL_COLOR;
-        if(290<=x && x<=320 && 15<=y && y<=75) {vgaR, vgaG, vgaB}   = `WALL_COLOR;
+        if(220<=x && x<=250 && 15<=y && y<=75)   {vgaR, vgaG, vgaB} = `WALL_COLOR;
+        if(290<=x && x<=320 && 15<=y && y<=75)   {vgaR, vgaG, vgaB} = `WALL_COLOR;
         if(320<=x && x<=350 && 150<=y && y<=185) {vgaR, vgaG, vgaB} = `WALL_COLOR;
         if(420<=x && x<=520 && 155<=y && y<=220) {vgaR, vgaG, vgaB} = `WALL_COLOR;
       
@@ -78,38 +80,23 @@ module stage1_rgb_gen(
         if(310<=x && x<=340 && 440<=y && y<=460) {vgaR, vgaG, vgaB} = 12'h853;
 
         //floor1
-        if(120<=x && x<=220 && 150<=y && y<=155) {vgaR, vgaG, vgaB} = 12'h940;
-        if(420<=x && x<=520 && 150<=y && y<=155) {vgaR, vgaG, vgaB} = 12'h940;
-        
-        if(220<=x && x<=250 && 10<=y && y<=15) {vgaR, vgaG, vgaB} = 12'h940;
-        if(290<=x && x<=320 && 10<=y && y<=15) {vgaR, vgaG, vgaB} = 12'h940;
-        
-        if(320<=x && x<=350 && 145<=y && y<=150) {vgaR, vgaG, vgaB} = 12'h940;
-        if(320<=x && x<=350 && 185<=y && y<=220) begin
-            // if(y%20==0) {vgaR, vgaG, vgaB} = 12'h520;
-            {vgaR, vgaG, vgaB} = 12'h940;
-        end
-        if(220<=x && x<=320 && 75<=y && y<=220) begin
-            // if(y%20==0) {vgaR, vgaG, vgaB} = 12'h520;
-            {vgaR, vgaG, vgaB} = 12'h940;
-        end
-        if(350<=x && x<=420 && 10<=y && y<=220) {vgaR, vgaG, vgaB} = 12'h940;
-
-        if(120<=x && x<=520 && 220<=y && y<=350) begin
-            // if(y%20==0) {vgaR, vgaG, vgaB} = 12'h520;
-            {vgaR, vgaG, vgaB} = 12'h940;
-        end
-        if(220<=x && x<=420 && 350<=y && y<=380) begin
-            // if(y%20==0) {vgaR, vgaG, vgaB} = 12'h520;
-            {vgaR, vgaG, vgaB} = 12'h940;
-        end
+        if(120<=x && x<=220 && 150<=y && y<=155) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(420<=x && x<=520 && 150<=y && y<=155) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(220<=x && x<=250 && 10<=y && y<=15)   {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(290<=x && x<=320 && 10<=y && y<=15)   {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(320<=x && x<=350 && 145<=y && y<=150) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(320<=x && x<=350 && 185<=y && y<=220) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(220<=x && x<=320 && 75<=y && y<=220)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(350<=x && x<=420 && 10<=y && y<=220)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(120<=x && x<=520 && 220<=y && y<=350) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+        if(220<=x && x<=420 && 350<=y && y<=380) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
+     
 
         // door
-        if(250<=x && x<=290 && 10<=y && y<=80) {vgaR, vgaG, vgaB} = 12'h000;
+        if(250<=x && x<=290 && 10<=y && y<=80) {vgaR, vgaG, vgaB} = `DOOR_COLOR;
         
-
         //stair
-        if(250<=x && x<=290 && 10<=y && y<=80) {vgaR, vgaG, vgaB} = 12'h000;
+        // if(250<=x && x<=290 && 10<=y && y<=80) {vgaR, vgaG, vgaB} = 12'h000;
 
 
 	end
