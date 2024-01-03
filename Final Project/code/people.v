@@ -102,14 +102,14 @@ module people_top_control(
                 
                 // 3 -> 1
                 else if(130<=people_left+19 && people_left+19<=210 && 100<=people_up+19 && people_up+19 <=140)  begin
-                    people_left <= people_left+19 - 20;
-                    people_up <=people_up+19 - 20;
+                    people_left <= next_people_left;
+                    people_up <= next_people_up;
                 end 
 
                 // 4 -> 1
                 else if(130<=people_left+19 && people_left+19<=210 && 250<=people_up+19 && people_up+19 <=290)  begin
-                    people_left <= people_left+19 - 20;
-                    people_up <=people_up+19 - 20;
+                    people_left <= next_people_left;
+                    people_up <= next_people_up;    
                 end 
                 else if(220<=people_left+19 && people_left+19<=320 && 440<=people_up+19 && people_up+19<=460) begin
                     people_left <= 250;
@@ -139,16 +139,16 @@ module people_top_control(
 
             else if(stage_state==3 && stage3_IL) begin
                 // 1 -> 3
-                people_left <= people_left+19 - 20;
-                people_up <=people_up+19 - 20;
+                people_left <= next_people_left;
+                people_up <= next_people_up;
                 dir <= next_dir;
                 stage3_IL <= 0;
             end
 
             else if(stage_state==4 && stage4_IL) begin
                 // 1 -> 4 
-                people_left <= people_left+19 - 20;
-                people_up <= people_up+19 - 20;
+                people_left <= 0;
+                people_up <= 0;
                 dir <= next_dir;
                 stage4_IL <= 0;
             end
@@ -190,12 +190,11 @@ module people_top_control(
     end
 
     always@(*) begin
-        if(fail || success || stage_state==3 || stage_state==4) begin
+        if(cin || fail || success || stage_state==3 || stage_state==4) begin
             next_people_left = people_left;
             next_people_up = people_up;
             next_dir = dir;
         end
-        // else if(!cin && been_ready && key_down[last_change] == 1'b1) begin
         else if(been_ready && key_down[last_change] == 1'b1) begin
             
             next_people_left = people_left;

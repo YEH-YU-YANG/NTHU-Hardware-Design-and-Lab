@@ -1,11 +1,15 @@
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
+`define P 11
+`define A 12
+`define S 13
 
 module top(
     input clk,
     input rst,
     inout wire PS2_DATA,
     inout wire PS2_CLK,
+    input cin,
     output wire [3:0] vgaRed,
     output wire [3:0] vgaGreen,
     output wire [3:0] vgaBlue,
@@ -18,7 +22,7 @@ module top(
     output wire pass,
     output reg fail,
     output reg success,
-    output wire cin
+    output wire LOCK
 );
     
     // vga
@@ -97,10 +101,10 @@ module top(
                         .banana2_up(banana2_up), .banana2_left(banana2_left), 
                         .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
                         .stage_state(stage_state), .chair_state(chair_state),
-                        .fail(fail),.success(success),
+                        .fail(fail),.success(success),.cin(cin),.LOCK(LOCK),
 
 
-                        .apple(apple),.key(key),.pass(pass),.password(password),.cin(cin),
+                        .apple(apple),.key(key),.pass(pass),.password(password),
                         .vgaR(vgaRed),.vgaG(vgaGreen),.vgaB(vgaBlue)
     );
 
@@ -157,17 +161,16 @@ module top(
         .clk(clk_25MHz)
     );
 
-    reg [15:0] nums;
-    always@(*) begin
-        nums[15:12] = 0;
-        nums[11:8] = 0;
-        nums[7:4] = 0;
-        
-        nums[3] = 0;
-        nums[2:0] = stage_state;
-    end
+    // reg [15:0] nums;
+    // always@(*) begin
+    //     nums[15:12] = 0;
+    //     nums[11:8] = 0;
+    //     nums[7:4] = 0;
+    //     nums[3] = 0;
+    //     nums[2:0] = stage_state;
+    // end
 
-    SevenSegment basys3_7_segment(.display(display),.digit(digit),.nums(nums),.rst(rst),.clk(clk));
+    SevenSegment basys3_7_segment(.display(display),.digit(digit),.nums(password),.rst(rst),.clk(clk));
     
 endmodule
 
@@ -234,6 +237,10 @@ module SevenSegment(
 			8 : display = 7'b0000000;   //1000
 			9 : display = 7'b0010000;	//1001
             10: display = 7'b011_1111;  //DASH
+            `P: display = 7'b000_1100;  //DASH
+            `A: display = 7'b000_1000;  //DASH
+            `S: display = 7'b001_0010;  //DASH
+
 			default : display = 7'b1111111;
     	endcase
     end

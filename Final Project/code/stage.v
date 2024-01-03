@@ -1,19 +1,23 @@
-`define WALL_COLOR 12'hDCD 
-`define FLOOR_COLOR 12'h656
-`define DOOR_COLOR 12'h000
-`define BLUE_COLOR 12'h548
+`define WALL_COLOR   12'hDCD 
+`define FLOOR_COLOR  12'h656
+`define DOOR_COLOR   12'h000
+`define BLUE_COLOR   12'h548
 `define PRISON_COLOR 12'h112
 
-`define F1 9'b0_0000_0101 // left  05 => 5  
-`define F2 9'b0_0000_0110 // right 06 => 6  
-`define F3 9'b0_0000_0100 // up    04 => 4  
-`define F4 9'b0_0000_1100 // down  0C => 12 
-`define F5 9'b0_0000_0011 // space 03 => 3 
-`define F6 9'b0_0000_1011 // 0B => 11 
-`define F9 9'b0_0000_0001 // 01 => 1 
+`define F1  9'b0_0000_0101 // left  05 => 5  
+`define F2  9'b0_0000_0110 // right 06 => 6  
+`define F3  9'b0_0000_0100 // up    04 => 4  
+`define F4  9'b0_0000_1100 // down  0C => 12 
+`define F5  9'b0_0000_0011 // space 03 => 3 
+`define F6  9'b0_0000_1011 // 0B => 11 
+`define F9  9'b0_0000_0001 // 01 => 1 
+`define F10 9'b0_0000_1001 // 09 => 9
 
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
+`define P 11
+`define A 12
+`define S 13
 module stage_top_control(
     input clk,
     input clk_25MHz,
@@ -45,13 +49,13 @@ module stage_top_control(
 
     input fail,
     input success,
-
+    input cin,
 
     output reg apple,
     output reg key,
     output reg pass,
     output reg [15:0] password,
-    output reg cin,
+    output wire LOCK,
 
     output reg [3:0] vgaR,
     output reg [3:0] vgaG,
@@ -86,7 +90,7 @@ module stage_top_control(
     reg [3:0] next_stage_state;
     always@(posedge clk) begin
         if(rst) begin
-            stage_state <= 1;
+            stage_state <= 0;
         end
         else begin
             stage_state <= next_stage_state;
@@ -104,7 +108,7 @@ module stage_top_control(
         else if(stage_state==1) begin
             if(211<=people_left && people_left<=261 && 401<=people_up && people_up<=421) next_stage_state = 0;
             else if(61<=people_left && people_left<=81 && 311<=people_up && people_up <=381) next_stage_state = 2;
-            // else if(111<=people_left && people_left<=191 && 81<=people_up && people_up <=121 && been_ready && key_down[`F5]) next_stage_state = 3;
+            else if(130<=people_left+19 && people_left+19<=210 && 81<=people_up && people_up <=121 && been_ready && key_down[`F5]) next_stage_state = 3;
             else if(130<=people_left+19 && people_left+19<=210 && 250<=people_up+19 && people_up+19 <=290 && been_ready && key_down[`F5]) next_stage_state = 4;
             // else if(key_down[`F5]) next_stage_state = 4;
             else next_stage_state = 1;
@@ -118,12 +122,12 @@ module stage_top_control(
         
 
         else if(stage_state==3) begin
-            if(130<=people_left+19 && people_left+19<=210 && 100<=people_up+19 && people_up+19 <=140 && been_ready && key_down[`F5]) next_stage_state = 1;
+            if(been_ready && key_down[`F6]) next_stage_state = 1;
             else next_stage_state = 3;
         end
 
         else if(stage_state==4) begin
-            if(130<=people_left+19 && people_left+19<=210 && 250<=people_up+19 && people_up+19 <=290 && been_ready && key_down[`F5]) next_stage_state = 1;
+            if(been_ready && key_down[`F6]) next_stage_state = 1;
             else next_stage_state = 4;
         end
 
@@ -187,45 +191,57 @@ module stage_top_control(
 
     /* -------------------------------- pass -------------------------------- */
 
-    // always@(posedge clk) begin
-    //     if(!pass && password[15:12]==4'd5 && password[11:8]==4'd3 && password[7:4]==4'd4 && password[3:0]==4'd6) pass <= 1;
-    //     else pass <= 0;
-    // end
-
-    reg next_cin;
     always@(posedge clk) begin
-        if(rst) cin <= 0;
-        else cin <= 0;
+        if(pass) pass <= 1;
+        else if(password[15:12]==4'd5 && password[11:8]==4'd3 && password[7:4]==4'd4 && password[3:0]==4'd6) pass <= 1;
+        else pass <= 0;
     end
-    // always@(*) begin
-    //     if(!cin && key_down[`F9] && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) next_cin = 1;
-    //     else if(cin && key_down[`F9] && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) next_cin = 0;
-    // end
 
-    // reg [3:0] key_num;
-    // always@(posedge clk) begin
-    //     if(rst) begin
-    //         password <= 0;
-    //     end
-    //     else if (cin && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) begin
-    //         password <= {password[11:0],key_num};
-    //     end
-    //     else begin
-    //         password <= 0;
-    //     end
-    // end
+    reg counter;
+    always@(posedge clk) begin
+        if(key_down[last_change]) begin
+            counter <= 1;
+        end
+        else begin
+            counter <= 0;
+        end
+    end
 
-    // always@(*) begin
-    //     case (last_change)
-    //         `F1 : key_num = 4'b0001;
-    //         `F2 : key_num = 4'b0010;
-    //         `F3 : key_num = 4'b0011;
-    //         `F4 : key_num = 4'b0100;
-    //         `F5 : key_num = 4'b0101;
-    //         `F6 : key_num = 4'b0110;
-    //         default : key_num = 4'b0000;
-    //     endcase
-    // end
+    reg lock;
+    always@(*) begin
+        if(counter==1) lock=1;
+        else lock = 0;
+    end
+    assign LOCK = lock;
+
+    
+    reg [3:0] key_num;
+    always@(posedge clk) begin
+        if(rst) begin
+            password <= 0;
+        end
+        else if (!pass && cin && !lock && been_ready && key_down[last_change] && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) begin
+            password <= {password[11:0],key_num};
+        end
+        else if(password[15:12]==4'd5 && password[11:8]==4'd3 && password[7:4]==4'd4 && password[3:0]==4'd6) begin
+            password[15:12] <= `P; 
+            password[11:8] <= `A;
+            password[7:4] <= `S;
+            password[3:0] <= `S;
+        end
+    end
+
+    always@(*) begin
+        case (last_change)
+            `F1 : key_num = 4'b0001;
+            `F2 : key_num = 4'b0010;
+            `F3 : key_num = 4'b0011;
+            `F4 : key_num = 4'b0100;
+            `F5 : key_num = 4'b0101;
+            `F6 : key_num = 4'b0110;
+            default : key_num = 4'b0000;
+        endcase
+    end
     /* -------------------------------------------------------------------------- */
 
     /* ------------------------------- vga output ------------------------------- */
@@ -1262,8 +1278,12 @@ module stage_top_control(
 
                     end
 
+                    if(130<=x && x<=210 && 250<=y && y<=290) {vgaR, vgaG, vgaB} = 12'h826;
+
                     // chair
                     if(stage_state==chair_state && chair_left<=x && x<=chair_left+40-1 && chair_up<=y && y<=chair_up+40-1 && chair_pixel!=12'h000) {vgaR, vgaG, vgaB} = chair_pixel;
+
+
 
                     // people
                     if(260<=people_up+39) begin

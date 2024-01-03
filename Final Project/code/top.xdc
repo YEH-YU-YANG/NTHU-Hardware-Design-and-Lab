@@ -31,12 +31,12 @@ set_property PACKAGE_PIN U19 [get_ports {pass}]
 #     set_property IOSTANDARD LVCMOS33 [get_ports {_led[11]}]
 # set_property PACKAGE_PIN P3 [get_ports {_led[12]}]
 #     set_property IOSTANDARD LVCMOS33 [get_ports {_led[12]}]
-set_property PACKAGE_PIN N3 [get_ports {cin}]
-    set_property IOSTANDARD LVCMOS33 [get_ports {cin}]
+set_property PACKAGE_PIN N3 [get_ports {success}]
+    set_property IOSTANDARD LVCMOS33 [get_ports {success}]
 set_property PACKAGE_PIN P1 [get_ports {fail}]
     set_property IOSTANDARD LVCMOS33 [get_ports {fail}]
-set_property PACKAGE_PIN L1 [get_ports {success}]
-    set_property IOSTANDARD LVCMOS33 [get_ports {success}]
+set_property PACKAGE_PIN L1 [get_ports {LOCK}]
+    set_property IOSTANDARD LVCMOS33 [get_ports {LOCK}]
 
 # Switches
 set_property PACKAGE_PIN V17 [get_ports {rst}]
@@ -69,8 +69,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports {rst}]
 #    set_property IOSTANDARD LVCMOS33 [get_ports {sw[13]}]
 # set_property PACKAGE_PIN T1 [get_ports _mute]
 #     set_property IOSTANDARD LVCMOS33 [get_ports _mute]
-# set_property PACKAGE_PIN R2 [get_ports _mode]
-#    set_property IOSTANDARD LVCMOS33 [get_ports _mode]
+set_property PACKAGE_PIN R2 [get_ports {cin}]
+   set_property IOSTANDARD LVCMOS33 [get_ports {cin}]
 
 
 ## Buttons
