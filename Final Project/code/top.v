@@ -1,25 +1,32 @@
+`define LEFT_DIR 0
+`define RIGHT_DIR 1
+
 module top(
     input clk,
     input rst,
     inout wire PS2_DATA,
     inout wire PS2_CLK,
-    input [15:0] SW,
     output wire [3:0] vgaRed,
     output wire [3:0] vgaGreen,
     output wire [3:0] vgaBlue,
     output hsync,
-    output vsync
+    output vsync,
+    output wire [6:0] display,
+	output wire [3:0] digit,
+    output wire key,
+    output wire apple,
+    output wire pass,
+    output reg fail,
+    output reg success,
+    output wire cin
 );
     
-
-
     // vga
-    wire [9:0] h_cnt, v_cnt;
+    wire [9:0] x,y;
     wire valid;
     
-
     // keyboard
-    wire [50:0] key_down;
+    wire [12:0] key_down;
     wire [8:0] last_change;
     wire been_ready;
 
@@ -27,62 +34,120 @@ module top(
     wire clk_25MHz;  
     clock_divider #(2) cd25(.clk(clk),.clk_div(clk_25MHz));
   	
-	wire clk_17;
-    clock_divider #(17) cd17(.clk(clk),.clk_div(clk_17));
+    // 問題在這
+    // wire clk_22;  
+    // clock_divider #(22) cd22(.clk(clk),.clk_div(clk_22));
     
-    wire clk_22;
-    clock_divider #(22) cd22(.clk(clk),.clk_div(clk_22));
-    
+    wire [2:0] stage_state;
+    wire [2:0] chair_state;
 
-	/* rst button */
-    wire rst_debounce,rst_one_pulse;
-    debounce drst(.clk(clk_17) ,.pb(rst), .pb_debounced(rst_debounce));
-    one_pulse orst(.clk(clk_17),.pb_in(rst_debounce),.pb_out(rst_one_pulse));
+    wire people_dir;
+    wire [9:0] people_up;
+    wire [9:0] people_left;
+    // wire [11:0] true_people_pixel;
+    // assign true_people_pixel = (apple) ? people_pixel^12'hAAA : people_pixel;
+
+    wire [9:0] chair_up;
+    wire [9:0] chair_left;
+
+    wire [9:0] banana1_up;
+    wire [9:0] banana1_left;
+
+    wire [9:0] banana2_up;
+    wire [9:0] banana2_left;
+
+    wire banana1_fail;
+    wire banana2_fail;
+    
+    always@(*) begin
+        fail = (banana1_fail || banana2_fail);
+    end
+
+    always@(*) begin
+        if( key && apple && pass && 220<=people_left && people_left<=420 && 380<=people_up && people_up<=440) success=1;
+        else success = 0;
+    end
+
+
+    wire [15:0] password;
 
     /* --------------------------------- people --------------------------------- */
 
-    wire [9:0] people_left_border;
-    wire [9:0] people_right_border;
-    wire [9:0] people_up_border;
-    wire [9:0] people_down_border;
-    wire [11:0] people_pixel;
 
-    people_top_control p1(.clk(clk), .clk_25MHz(clk_25MHz), .rst(rst_one_pulse), .key_down(key_down), .last_change(last_change), .been_ready(been_ready),.x(h_cnt), .y(v_cnt), 
-                          .people_left_border(people_left_border), .people_right_border(people_right_border), .people_up_border(people_up_border), .people_down_border(people_down_border),
-                          .people_pixel(people_pixel));
-
-    // new_people2_w40_h30 p6 (.clka(clk_25MHz),.wea(0),.addra(people_addr),.dina(garbage),.douta(people_pixel));
-
+    people_top_control p1(.clk(clk), .rst(rst), 
+                          .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
+                          .stage_state(stage_state), .chair_state(chair_state),
+                          .x(x), .y(y), 
+                          .chair_up(chair_up),.chair_left(chair_left),
+                          .apple(apple), .fail(fail), .success(success),.cin(cin),
+                          .people_left(people_left), .people_up(people_up),.dir(people_dir));
 
     /* -------------------------------------------------------------------------- */
 
 
     /* ----------------------------------- vga ---------------------------------- */
-    vga_controller   vga_inst(.pclk(clk_25MHz),.reset(rst_one_pulse),.hsync(hsync),.vsync(vsync),.valid(valid),.h_cnt(h_cnt),.v_cnt(v_cnt));
 
-    // wire [11:0] stage1_rgb;
-	// stage1_rgb_gen m(.clk(clk_25MHz),.rst(rst_one_pulse), .valid(valid), .x(h_cnt), .y(v_cnt), 
-    //                  .people_left_border(people_left_border),.people_right_border(people_right_border),.people_up_border(people_up_border),.people_down_border(people_down_border), .people_pixel(people_pixel), 
-    //                  .vgaR(stage1_rgb[11:8]),.vgaG(stage1_rgb[7:4]),.vgaB(stage1_rgb[3:0]));
+    vga_controller   vga_inst(.pclk(clk_25MHz),.reset(rst),.hsync(hsync),.vsync(vsync),.valid(valid),.h_cnt(x),.v_cnt(y));
 
-    stage_top_control m(.clk(clk_25MHz),.rst(rst_one_pulse), .valid(valid), .x(h_cnt), .y(v_cnt), 
-                        .people_left_border(people_left_border),.people_right_border(people_right_border),.people_up_border(people_up_border),.people_down_border(people_down_border), .people_pixel(people_pixel), 
-                        .vgaR(vgaRed),.vgaG(vgaGreen),.vgaB(vgaBlue));
+    stage_top_control m(.clk(clk), .clk_25MHz(clk_25MHz), .rst(rst), 
+                        .valid(valid), .x(x), .y(y), 
+                        .people_up(people_up),.people_left(people_left),  .people_dir(people_dir),
+                        .chair_up(chair_up),.chair_left(chair_left),
+                        .banana1_up(banana1_up), .banana1_left(banana1_left), 
+                        .banana2_up(banana2_up), .banana2_left(banana2_left), 
+                        .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
+                        .stage_state(stage_state), .chair_state(chair_state),
+                        .fail(fail),.success(success),
 
+
+                        .apple(apple),.key(key),.pass(pass),.password(password),.cin(cin),
+                        .vgaR(vgaRed),.vgaG(vgaGreen),.vgaB(vgaBlue)
+    );
 
     /* -------------------------------------------------------------------------- */
-
-
-    // reg [4:0] state=1;
-    // // vga
-    // always@(*) begin
-    //     case(state)
-    //         1: {vgaRed, vgaGreen, vgaBlue} = stage1_rgb;
-    //         default {vgaRed, vgaGreen, vgaBlue} = stage1_rgb;
-    //     endcase
-    // end
     
-	KeyboardDecoder k(
+    /* ---------------------------------- chair --------------------------------- */
+    chair_top_control c0(
+        .clk(clk), .rst(rst), .stage_state(stage_state), .chair_state(chair_state),
+        .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
+        .people_up(people_up), .people_left(people_left),
+        .chair_up(chair_up),.chair_left(chair_left)
+    );
+    /* -------------------------------------------------------------------------- */
+
+    /* --------------------------------- banana --------------------------------- */
+    // banana1_top_control b1(
+    //     .clk(clk_22), .rst(rst),.stage_state(stage_state),
+    //     .people_up(people_up), .people_left(people_left),
+    //     .banana_up(banana1_up),.banana_left(banana1_left), .fail(banana1_fail)
+    // );
+    // banana2_top_control b2(
+    //     .clk(clk_22), .rst(rst),.stage_state(stage_state),
+    //     .people_up(people_up), .people_left(people_left),
+    //     .banana_up(banana2_up),.banana_left(banana2_left), .fail(banana2_fail)
+    // );
+	/* -------------------------------------------------------------------------- */
+   
+    /* ------------------------ memory address generator ------------------------ */
+    // mem_addr_gen m0(
+    //     .clk(clk_22),
+    //     .rst(rst),
+    //     .x(x), .y(y), 
+    //     .chair_up(chair_up),.chair_left(chair_left),
+    //     .banana1_up(banana1_up), .banana1_left(banana1_left), 
+    //     .banana2_up(banana2_up), .banana2_left(banana2_left),
+
+    //     // .carbinet_addr(carbinet_addr),
+    //     .key_addr(key_addr),
+    //     .chair_addr(chair_addr),
+    //     .banana1_addr(banana1_addr),
+    //     .banana2_addr(banana2_addr),
+    //     .apple_addr(apple_addr),
+    //     .people_addr(people_addr)
+    // );
+    /* -------------------------------------------------------------------------- */
+   
+    KeyboardDecoder k(
         .key_down(key_down),
         .last_change(last_change),
         .key_valid(been_ready),
@@ -91,60 +156,92 @@ module top(
         .rst(rst),
         .clk(clk_25MHz)
     );
-endmodule
 
+    reg [15:0] nums;
+    always@(*) begin
+        nums[15:12] = 0;
+        nums[11:8] = 0;
+        nums[7:4] = 0;
+        
+        nums[3] = 0;
+        nums[2:0] = stage_state;
+    end
 
-
-
-
-
-
-module division #(
-    // the size of input and output ports of the division module is generic.
-    parameter WIDTH = 8
-)(
-    input [WIDTH-1:0] A,
-    input [WIDTH-1:0] B,
-    output reg [WIDTH-1:0] Res,
-    output reg [WIDTH-1:0] Remainder
-);
-
+    SevenSegment basys3_7_segment(.display(display),.digit(digit),.nums(nums),.rst(rst),.clk(clk));
     
-    // internal variables    
-    reg [WIDTH-1:0] a1, b1;
-    reg [WIDTH:0] p1;   
-    integer i;
-
-    always @ (A or B)
-    begin
-        // initialize the variables.
-        a1 = A;
-        b1 = B;
-        p1 = 0;
-
-        for (i = 0; i < WIDTH; i = i + 1) begin // start the for loop
-            p1 = {p1[WIDTH-2:0], a1[WIDTH-1]};
-            a1[WIDTH-1:1] = a1[WIDTH-2:0];
-            p1 = p1 - b1;
-
-            if (p1[WIDTH-1] == 1) begin
-                a1[0] = 0;
-                p1 = p1 + b1;
-            end
-            else
-                a1[0] = 1;
-        end
-
-        Res = a1;
-        Remainder = p1[WIDTH-1:0];
-    end 
 endmodule
 
+module SevenSegment(
+	output reg [6:0] display,
+	output reg [3:0] digit,
+	input wire [15:0] nums,
+	input wire rst,
+	input wire clk
 
-
+);
+    
+    reg [15:0] clk_divider;
+    reg [3:0] display_num;
+    
+    always @ (posedge clk, posedge rst) begin
+    	if (rst) begin
+    		clk_divider <= 15'b0;
+    	end else begin
+    		clk_divider <= clk_divider + 15'b1;
+    	end
+    end
+    
+    always @ (posedge clk_divider[15], posedge rst) begin
+    	if (rst) begin
+    		display_num <= 4'b0000;
+    		digit <= 4'b1111;
+    	end else begin
+    		case (digit)
+    			4'b1110 : begin
+    					display_num <= nums[7:4];
+    					digit <= 4'b1101;
+    				end
+    			4'b1101 : begin
+						display_num <= nums[11:8];
+						digit <= 4'b1011;
+					end
+    			4'b1011 : begin
+						display_num <= nums[15:12];
+						digit <= 4'b0111;
+					end
+    			4'b0111 : begin
+						display_num <= nums[3:0];
+						digit <= 4'b1110;
+					end
+    			default : begin
+						display_num <= nums[3:0];
+						digit <= 4'b1110;
+					end				
+    		endcase
+    	end
+    end
+    
+    always @ (*) begin
+    	case (display_num)
+    		0 : display = 7'b1000000;	//0000
+			1 : display = 7'b1111001;   //0001                                                
+			2 : display = 7'b0100100;   //0010                                                
+			3 : display = 7'b0110000;   //0011                                             
+			4 : display = 7'b0011001;   //0100                                               
+			5 : display = 7'b0010010;   //0101                                               
+			6 : display = 7'b0000010;   //0110
+			7 : display = 7'b1111000;   //0111
+			8 : display = 7'b0000000;   //1000
+			9 : display = 7'b0010000;	//1001
+            10: display = 7'b011_1111;  //DASH
+			default : display = 7'b1111111;
+    	endcase
+    end
+    
+endmodule
 
 module KeyboardDecoder(
-	output reg [50:0] key_down,
+	output reg [12:0] key_down,
 	output wire [8:0] last_change,
 	output reg key_valid,
 	inout wire PS2_DATA,
@@ -172,7 +269,7 @@ module KeyboardDecoder(
     wire valid;
     wire err;
     
-    wire [50:0] key_decode = 1 << last_change;
+    wire [12:0] key_decode = 1 << last_change;
     assign last_change = {key[9], key[7:0]};
     
     KeyboardCtrl_0 inst (
@@ -288,20 +385,20 @@ module clock_divider #(
     assign clk_div = num[n-1];
 endmodule
 
-module debounce (
-	input wire clk,
-	input wire pb, 
-	output wire pb_debounced 
-    );
-	reg [3:0] shift_reg; 
+// module debounce (
+// 	input wire clk,
+// 	input wire pb, 
+// 	output wire pb_debounced 
+//     );
+// 	reg [3:0] shift_reg; 
 
-	always @(posedge clk) begin
-		shift_reg[3:1] <= shift_reg[2:0];
-		shift_reg[0] <= pb;
-	end
+// 	always @(posedge clk) begin
+// 		shift_reg[3:1] <= shift_reg[2:0];
+// 		shift_reg[0] <= pb;
+// 	end
 
-	assign pb_debounced = ((shift_reg == 4'b1111) ? 1'b1 : 1'b0);
-endmodule
+// 	assign pb_debounced = ((shift_reg == 4'b1111) ? 1'b1 : 1'b0);
+// endmodule
 
 module one_pulse (
     input wire clk,
@@ -323,6 +420,11 @@ module one_pulse (
 		pb_in_delay <= pb_in;
 	end
 endmodule
+
+`timescale 1ns/1ps
+/////////////////////////////////////////////////////////////////
+// Module Name: vga
+/////////////////////////////////////////////////////////////////
 
 module vga_controller (
     input wire pclk, reset,
