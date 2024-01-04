@@ -37,7 +37,7 @@ module chair_top_control(
             // 0 -> 1
             if(chair_IL1 && 350<=chair_left+20 && chair_left+20<=420 && 10<=chair_up+20 && chair_up+20<=30) begin
                 chair_left <= 190;
-                chair_up <= 330;                    
+                chair_up <= 310;                    
                 chair_state <= 1;
                 chair_IL1 <= 0;
             end

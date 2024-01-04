@@ -7,11 +7,11 @@
     input [9:0] chair_left,
     input [9:0] chair_up,
 
-    input [9:0] banana1_up,
-    input [9:0] banana1_left,
+    input [9:0] ghost1_up,
+    input [9:0] ghost1_left,
 
-    input [9:0] banana2_up,
-    input [9:0] banana2_left,
+    input [9:0] ghost2_up,
+    input [9:0] ghost2_left,
 
     input [9:0] people_left,
     input [9:0] people_up,
@@ -19,8 +19,8 @@
     output reg [16:0] carbinet_addr,
     output reg [16:0] key_addr,
     output reg [16:0] chair_addr,
-    output reg [16:0] banana1_addr,
-    output reg [16:0] banana2_addr,
+    output reg [16:0] ghost1_addr,
+    output reg [16:0] ghost2_addr,
     output reg [16:0] apple_addr,
     output reg [16:0] people_addr
 );
@@ -35,11 +35,11 @@
         if(chair_left<=x && x<=chair_left+40-1 && chair_up<=y && y<=chair_up+40-1) chair_addr <= ((x-chair_left)>>1)+20*((y-chair_up)>>1);
         else chair_addr <= 0;
         
-        if(banana1_left<=x && x<=banana1_left+30-1 && banana1_up<=y && y<=banana1_up+30-1) banana1_addr <= ((x-330)>>1) + 35*((y - 45)>>1);
-        else banana1_addr <= 0;
+        if(ghost1_left<=x && x<=ghost1_left+30-1 && ghost1_up<=y && y<=ghost1_up+30-1) ghost1_addr <= ((x-330)>>1) + 35*((y - 45)>>1);
+        else ghost1_addr <= 0;
 
-        if(banana2_left<=x && x<=banana2_left+30-1 && banana2_up<=y && y<=banana2_up+30-1) banana2_addr <= ((x-330)>>1) + 35*((y - 45)>>1);
-        else banana2_addr <= 0;
+        if(ghost2_left<=x && x<=ghost2_left+30-1 && ghost2_up<=y && y<=ghost2_up+30-1) ghost2_addr <= ((x-330)>>1) + 35*((y - 45)>>1);
+        else ghost2_addr <= 0;
 
         if(380<=x && x<=400 && 70<=y && y<=90) apple_addr <= ((x-330)>>1) + 35*((y - 45)>>1);
         else apple_addr <= 0;

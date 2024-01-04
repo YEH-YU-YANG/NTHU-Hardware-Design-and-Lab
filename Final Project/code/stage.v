@@ -15,9 +15,18 @@
 
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
-`define P 11
-`define A 12
-`define S 13
+
+`define DASH 0
+`define P 7
+`define A 8
+`define S 9
+`define F 10
+`define I 11
+`define L 12
+`define G 13
+`define O 14
+`define D 15
+
 module stage_top_control(
     input clk,
     input clk_25MHz,
@@ -34,11 +43,11 @@ module stage_top_control(
     input [9:0] chair_left,
     input [9:0] chair_up,
 
-    input [9:0] banana1_up,
-    input [9:0] banana1_left,
+    input [9:0] ghost1_up,
+    input [9:0] ghost1_left,
 
-    input [9:0] banana2_up,
-    input [9:0] banana2_left,
+    input [9:0] ghost2_up,
+    input [9:0] ghost2_left,
 
     input [12:0] key_down,
     input [8:0] last_change,
@@ -47,27 +56,41 @@ module stage_top_control(
     output reg [2:0] stage_state,
     input [2:0] chair_state,
 
-    input fail,
-    input success,
-    input cin,
+    input FAIL,
+    input SUCCESS,
+    
+    input CIN,
+    input KEY_IN,
+    input APPLE_IN,
+    input PASS_IN,
 
-    output reg apple,
-    output reg key,
-    output reg pass,
-    output reg [15:0] password,
+    output wire KEY_OUT,
+    output wire APPLE_OUT,
+    output wire PASS_OUT,
     output wire LOCK,
+
+    output reg [15:0] password,
 
     output reg [3:0] vgaR,
     output reg [3:0] vgaG,
     output reg [3:0] vgaB
 );
 
+    reg key, next_key;
+    reg apple, next_apple;
+    reg pass;
+
+    assign KEY_OUT   = (KEY_IN  ||  key);
+    assign APPLE_OUT = (APPLE_IN || apple);
+    assign PASS_OUT  = (PASS_IN  || pass);
+
+
     wire [11:0] hint_pixel;
-    // wire [11:0] carbinet_pixel;
+    wire [11:0] carbinet_pixel;
     wire [11:0] key_pixel;
     wire [11:0] chair_pixel;
-    wire [11:0] banana1_pixel;
-    wire [11:0] banana2_pixel;
+    wire [11:0] ghost1_pixel;
+    wire [11:0] ghost2_pixel;
     wire [11:0] apple_pixel;
     wire [11:0] people_pixel;
     wire [11:0] people_right_pixel;
@@ -76,11 +99,13 @@ module stage_top_control(
 
     wire [11:0] garbage;
     hint_w80h40 p2 (.clka(clk_25MHz), .wea(0), .addra( (x-130)+80*(y-60) ), .dina(garbage), .douta(hint_pixel) );
-    // carbinet_w35h35 p3 (.clka(clk_25MHz), .wea(0), .addra( carbinet_addr  ), .dina(garbage), .douta(carbinet_pixel));
-    // key_w20h20      p4 (.clka(clk_25MHz), .wea(0), .addra( key_addr       ), .dina(garbage), .douta(key_pixel      ));
-    chair_w20h20    p5 (.clka(clk_25MHz), .wea(0), .addra( ((x-chair_left)>>1)+20*((y-chair_up)>>1)  ), .dina(garbage), .douta( chair_pixel ));
-    // banana_w30h30   p6 (.clka(clk_25MHz), .wea(0), .addra( banana1_addr   ), .dina(garbage), .douta(banana1_pixel  ));
-    // banana_w30h30   p7 (.clka(clk_25MHz), .wea(0), .addra( banana2_addr   ), .dina(garbage), .douta(banana2_pixel  ));
+    carbinet_w35h35 p3 (.clka(clk_25MHz), .wea(0), .addra( ((x-330)>>1) + 35*(y-45>>1)  ), .dina(garbage), .douta(carbinet_pixel));
+    key_w20h20      p4 (.clka(clk_25MHz), .wea(0), .addra( (x-360)+20*(y-45)       ), .dina(garbage), .douta(key_pixel      ));
+    chair_w40h40    p5 (.clka(clk_25MHz), .wea(0), .addra( ((x-chair_left))+40*((y-chair_up))  ), .dina(garbage), .douta( chair_pixel ));
+
+    ghost_w30h30   p6 (.clka(clk_25MHz), .wea(0), .addra( (x-ghost1_left)+30*(y-ghost1_up)   ), .dina(garbage), .douta(ghost1_pixel  ));
+    ghost_w30h30   p7 (.clka(clk_25MHz), .wea(0), .addra( (x-ghost2_left)+30*(y-ghost2_up)   ), .dina(garbage), .douta(ghost2_pixel  ));
+
 	apple_w20h20    p8 (.clka(clk_25MHz), .wea(0), .addra( (x-380)+20*(y-70)     ), .dina(garbage), .douta(apple_pixel    ));   
     people_right_w40h40 p9  (.clka(clk_25MHz),.wea(0),.addra( (x - people_left) + 40*(y - people_up) ), .dina(garbage), .douta( people_right_pixel ));
     people_left_w40h40  p10 (.clka(clk_25MHz),.wea(0),.addra( (x - people_left) + 40*(y - people_up) ), .dina(garbage), .douta( people_left_pixel ));
@@ -90,7 +115,7 @@ module stage_top_control(
     reg [3:0] next_stage_state;
     always@(posedge clk) begin
         if(rst) begin
-            stage_state <= 0;
+            stage_state <= 2;
         end
         else begin
             stage_state <= next_stage_state;
@@ -100,8 +125,8 @@ module stage_top_control(
     always@(*) begin
         if(stage_state==0) begin
             if(331<=people_left+19 && people_left<=401 && 10<=people_up+19 && people_up<=11) next_stage_state = 1;
-            // else if(apple && key && 250<=people_left+19 && people_left+19<=290 && 10<=people_up+19 && people_up+19<=80 && key_down[`F5]) next_stage_state = 6;
-            else if(231<=people_left && people_left<=271 && 10<=people_up+19 && people_up<=61 && key_down[`F5]) next_stage_state = 6;
+            else if(KEY_OUT && 231<=people_left && people_left<=271 && 10<=people_up+19 && people_up<=61 && key_down[`F5]) next_stage_state = 6;
+            // else if(231<=people_left && people_left<=271 && 10<=people_up+19 && people_up<=61 && key_down[`F5]) next_stage_state = 6;
             else next_stage_state = 0;
         end
 
@@ -148,7 +173,6 @@ module stage_top_control(
 
 
     /* ----------------------------------- key ---------------------------------- */
-    reg next_key;
     always@(posedge clk) begin
         if(rst) begin
             key <= 0;
@@ -159,14 +183,13 @@ module stage_top_control(
         end
     end
     always@(*) begin
-        if(stage_state==2 && stage_state==chair_state && key_down[`F5] && 
+        if(stage_state==2 && stage_state==chair_state && key_down[`F10] && 
         people_up < chair_up && chair_up<people_up+39 && people_up+39<=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_key = 1;
         else next_key = 0;
     end
     /* -------------------------------------------------------------------------- */
 
     /* ---------------------------------- apple --------------------------------- */
-    reg next_apple;
     always@(posedge clk) begin
         if(rst) apple <= 0;
         else if(apple) apple <= 1;
@@ -175,7 +198,7 @@ module stage_top_control(
 
     always@(*) begin
         if(stage_state==5) begin
-            if(360<=people_left+19 && people_left+19<=400 && 65<=people_up+19 && people_up+19<=95 && key_down[`F5]) begin
+            if(360<=people_left+19 && people_left+19<=400 && 65<=people_up+19 && people_up+19<=95 && key_down[`F10]) begin
                 next_apple = 1;
             end
             else begin
@@ -190,9 +213,9 @@ module stage_top_control(
     /* -------------------------------------------------------------------------- */
 
     /* -------------------------------- pass -------------------------------- */
-
     always@(posedge clk) begin
-        if(pass) pass <= 1;
+        if(rst) pass <= 0;
+        else if(pass) pass <= 1;
         else if(password[15:12]==4'd5 && password[11:8]==4'd3 && password[7:4]==4'd4 && password[3:0]==4'd6) pass <= 1;
         else pass <= 0;
     end
@@ -220,14 +243,39 @@ module stage_top_control(
         if(rst) begin
             password <= 0;
         end
-        else if (!pass && cin && !lock && been_ready && key_down[last_change] && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) begin
-            password <= {password[11:0],key_num};
-        end
-        else if(password[15:12]==4'd5 && password[11:8]==4'd3 && password[7:4]==4'd4 && password[3:0]==4'd6) begin
-            password[15:12] <= `P; 
-            password[11:8] <= `A;
-            password[7:4] <= `S;
-            password[3:0] <= `S;
+        else begin
+            
+            if(FAIL) begin
+                password[15:12] <= `F; 
+                password[11:8] <= `A;
+                password[7:4] <= `I;
+                password[3:0] <= `L;
+            end
+            else if(SUCCESS) begin
+                password[15:12] <= `G; 
+                password[11:8] <= `O;
+                password[7:4] <= `O;
+                password[3:0] <= `D;
+            end
+            else begin
+            
+                if (!PASS_OUT && CIN && !lock && been_ready && key_down[last_change] && stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) begin
+                    password <= {password[11:0],key_num};
+                end
+                else if(PASS_OUT) begin
+                    password[15:12] <= `P; 
+                    password[11:8] <= `A;
+                    password[7:4] <= `S;
+                    password[3:0] <= `S;
+                end
+                else if(!PASS_OUT && stage_state!=6) begin
+                    password[15:12] <= `DASH; 
+                    password[11:8] <= `DASH;
+                    password[7:4] <= `DASH;
+                    password[3:0] <= `DASH;
+                end
+            end
+            
         end
     end
 
@@ -821,11 +869,14 @@ module stage_top_control(
 
                     // door
                     if(250<=x && x<=290 && 10<=y && y<=80) {vgaR, vgaG, vgaB} = `DOOR_COLOR;
+                    // 門把
+                    if(250<=x && x<=255 && 35<=y && y<=40) {vgaR, vgaG, vgaB} = 12'hFFF;
+
 
                     // chair
                     // if(stage_state==chair_state && chair_left<x && x<chair_left+39 && chair_up<=y && y<=chair_up+39 && chair_pixel!=12'h000) {vgaR, vgaG, vgaB} = chair_pixel;
                     if(stage_state==chair_state && chair_left<=x && x<=chair_left+40-1 && chair_up<=y && y<=chair_up+40-1 && chair_pixel!=12'h000) begin
-                        {vgaR, vgaG, vgaB} = 12'h000;
+                        {vgaR, vgaG, vgaB} = chair_pixel;
                     end
 
                     // people                    
@@ -1290,7 +1341,7 @@ module stage_top_control(
                         if( people_left+1 < x && x < people_left + 40 - 1 && 
                             people_up   < y && y < people_up+39  && people_pixel!=12'h000) begin
                             {vgaR, vgaG, vgaB} = people_pixel;
-                        end                
+                        end             
                     end
                 end
                 2:  begin
@@ -1596,6 +1647,14 @@ module stage_top_control(
                         if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
                     end
                 
+                    // wall
+                    if(260<=x && x<=400 && 15<=y && y<=85) {vgaR, vgaG, vgaB} = `WALL_COLOR;
+                    if(220<=x && x<=260 && 170<=y && y<=240) {vgaR, vgaG, vgaB} = `WALL_COLOR;
+                    if(400<=x && x<=410 && 255<=y && y<=325) {vgaR, vgaG, vgaB} = `WALL_COLOR;
+
+                    // LINE
+                    if(260<=x && x<=400 && (y==85 || y==86)) {vgaR, vgaG, vgaB} = 12'h545;
+                    if(400<=x && x<=410 && (y==325 || y==326)) {vgaR, vgaG, vgaB} = 12'h545;
 
                     // black block
                     if(220<=x && x<=260 && 10<=y && y<=175) {vgaR, vgaG, vgaB} = 12'h000;
@@ -1605,21 +1664,12 @@ module stage_top_control(
                     // carpet
                     // if(260<x && x<=400 && 116<=y && y<=197) {vgaR, vgaG, vgaB} = carpet_pixel;
 
-                    // wall
-                    if(260<=x && x<=400 && 15<=y && y<=85) {vgaR, vgaG, vgaB} = `WALL_COLOR;
-                    if(220<=x && x<=260 && 170<=y && y<=240) {vgaR, vgaG, vgaB} = `WALL_COLOR;
-                    if(400<=x && x<=410 && 255<=y && y<=325) {vgaR, vgaG, vgaB} = `WALL_COLOR;
-                    
-                    // LINE
-                    if(260<=x && x<=400 && (y==85 || y==86)) {vgaR, vgaG, vgaB} = 12'h545;
-                    if(400<=x && x<=410 && (y==325 || y==326)) {vgaR, vgaG, vgaB} = 12'h545;
-
                     // carbinet  
-                    // if(330<=x && x<=400 && 45<=y && y<115) {vgaR, vgaG, vgaB} = carbinet_pixel;  
+                    if(330<=x && x<=400 && 45<=y && y<115) {vgaR, vgaG, vgaB} = carbinet_pixel;  
 
                     
                     // key
-                    if(!key && 360<=x && x<=380 && 35<=y && y<=55 && key_pixel!=12'h000) {vgaR, vgaG, vgaB} = key_pixel;  
+                    if(!KEY_OUT && 360<=x && x<=380 && 45<=y && y<=65 && key_pixel!=12'h000) {vgaR, vgaG, vgaB} = key_pixel;  
 
                     // chair
                     if(stage_state==chair_state && chair_left<=x && x<=chair_left+40-1 && chair_up<=y && y<=chair_up+40-1 && chair_pixel!=12'h000) {vgaR, vgaG, vgaB} = chair_pixel;
@@ -2299,14 +2349,14 @@ module stage_top_control(
                     if(400<=x && x<=500 && 10<=y && y<=250) {vgaR, vgaG, vgaB} = 12'h000;
 
 
-                    // banana1
-                    if(banana1_left<=x && x<=banana1_left+30-1 && banana1_up<=y && y<=banana1_up+30-1 && banana1_pixel!=12'h000) {vgaR, vgaG, vgaB} = banana1_pixel;
+                    // ghost1
+                    if(ghost1_left<=x && x<=ghost1_left+30-1 && ghost1_up<=y && y<=ghost1_up+30-1 && ghost1_pixel!=12'h0F0) {vgaR, vgaG, vgaB} = ghost1_pixel;
 
-                    // banana2
-                    if(banana2_left<=x && x<=banana2_left+30-1 && banana2_up<=y && y<=banana2_up+30-1 && banana2_pixel!=12'h000) {vgaR, vgaG, vgaB} = banana2_pixel;
+                    // ghost2
+                    if(ghost2_left<=x && x<=ghost2_left+30-1 && ghost2_up<=y && y<=ghost2_up+30-1 && ghost2_pixel!=12'h0F0) {vgaR, vgaG, vgaB} = ghost2_pixel;
 
                     //apple
-                    if(!apple && 380<=x && x<=400 && 70<=y && y<=90 && apple_pixel!=12'h000) {vgaR, vgaG, vgaB} = apple_pixel;
+                    if(!APPLE_OUT && 380<=x && x<=400 && 70<=y && y<=90 && apple_pixel!=12'h000) {vgaR, vgaG, vgaB} = apple_pixel;
 
                     // people
                     if( people_left+1 < x && x < people_left+39 && people_up<y && y<people_up+39  && people_pixel!=12'h000) begin
@@ -2316,7 +2366,8 @@ module stage_top_control(
                 6:  begin
                     {vgaR, vgaG, vgaB} = 12'h000;
 
-                    if(people_left-20<=x && x<=people_left+59 && people_up-20<=y && y<=people_up+59) begin
+                    if(APPLE_OUT && people_left-20<=x && x<=people_left+59 && people_up-20<=y && y<=people_up+59) begin
+                        
                         // floor
                         if(220<=x && x<=320 && 30<=y && y<=460) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
                         if(320<=x && x<=420 && 30<=y && y<=280)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
@@ -2726,8 +2777,18 @@ module stage_top_control(
                         // black block
                         if(320<=x && x<=420 && 280<=y && y<=400) {vgaR, vgaG, vgaB} = 12'h000;
 
-                        // pass
+                        // input password field
                         if(370<=x && x<=420 && 85<=y && y<=135) {vgaR, vgaG, vgaB} = 12'hB06;
+
+                        if(x==380 && 95<=y && y<=125) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(x==410 && 95<=y && y<=125) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(380<=x && x<=410 && y==95) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(380<=x && x<=410 && y==125){vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(x==390 && 105<=y && y<=115) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(x==400 && 105<=y && y<=115) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(390<=x && x<=400 && y==105) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(390<=x && x<=400 && y==115) {vgaR, vgaG, vgaB} = 12'h767;
 
                         // wall
                         if(220<=x && x<=420 && 35<=y && y<=85)   {vgaR, vgaG, vgaB} = `WALL_COLOR;
@@ -2737,7 +2798,6 @@ module stage_top_control(
                             people_up   < y && y < people_up+39  && people_pixel!=12'h000) begin
                             {vgaR, vgaG, vgaB} = people_pixel;
                         end
-
                     end
                     else begin
                         {vgaR, vgaG, vgaB} = 12'h000;
@@ -2746,11 +2806,11 @@ module stage_top_control(
             endcase
         end
 
-        // if(fail) begin
-        // end
+        if(FAIL) begin
+        end
 
-        // if(success) begin
-        // end
+        if(SUCCESS) begin
+        end
     end
     /* -------------------------------------------------------------------------- */
 

@@ -26,9 +26,9 @@ module people_top_control(
     input [9:0] chair_left,
     
     input apple,
-    input fail,
-    input success,
-    input cin,
+    input FAIL,
+    input SUCCESS,
+    input CIN,
 
     output reg [9:0] people_left,
     output reg [9:0] people_up,
@@ -147,8 +147,8 @@ module people_top_control(
 
             else if(stage_state==4 && stage4_IL) begin
                 // 1 -> 4 
-                people_left <= 0;
-                people_up <= 0;
+                people_left <= next_people_left;
+                people_up <= next_people_up;
                 dir <= next_dir;
                 stage4_IL <= 0;
             end
@@ -190,7 +190,7 @@ module people_top_control(
     end
 
     always@(*) begin
-        if(cin || fail || success || stage_state==3 || stage_state==4) begin
+        if(CIN || FAIL || SUCCESS || stage_state==3 || stage_state==4) begin
             next_people_left = people_left;
             next_people_up = people_up;
             next_dir = dir;
@@ -232,7 +232,6 @@ module people_top_control(
             end
 
             if(stage_state==2 && chair_state==2 && chair_up+20<=115) begin
-                // if(key_down[`key_c] && people_up+10 < chair_up+39 && people_up+39>=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_people_up = people_up-20;
                 if(key_down[`F5] && people_up+10 < chair_up+39 && people_up+39>=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_people_up = people_up-40;
             end
         end
