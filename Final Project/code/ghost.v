@@ -1,7 +1,7 @@
-`define RIGHT 0
-`define LEFT 1
-`define UP 0
-`define DOWN 1
+`define LEFT 0
+`define RIGHT 1 
+`define UP 2
+`define DOWN 3
 
 
 module ghost1_top_control(
@@ -15,7 +15,8 @@ module ghost1_top_control(
     output reg [9:0] ghost_up,
     output reg [9:0] ghost_left,
 
-    output reg fail
+    output reg fail,
+    output reg [1:0] dir
 );
     
     reg [23:0] count; // 24bit counter -> 1e7
@@ -23,19 +24,14 @@ module ghost1_top_control(
 
     reg [9:0] next_ghost_up;
     reg [9:0]  next_ghost_left;
-    reg dir, next_dir;
 
+    reg [1:0] next_dir;
     reg IL;
 
     always@(posedge clk) begin
-        if(rst) begin
-            ghost_left <= 300;
-            ghost_up <= 335;
-            dir <= `RIGHT;
-        end
-        else if(IL) begin
-            ghost_left <= 300;
-            ghost_up <= 335;
+        if(rst || IL) begin
+            ghost_left <= 250;
+            ghost_up <= 330;
             dir <= `RIGHT;
         end
         else begin 
@@ -51,23 +47,25 @@ module ghost1_top_control(
 
 
     always@(*) begin
-        if(dir==`RIGHT && ghost_left<=400) next_dir=`RIGHT;
-        else if(dir==`LEFT && ghost_left>=310) next_dir=`LEFT;
-        else next_dir = ~dir;
+        if(dir==`RIGHT && ghost_left>=370) next_dir=`UP;
+        else if(dir==`UP && ghost_up<=165) next_dir=`DOWN;
+        else if(dir==`DOWN && ghost_up>=330) next_dir=`LEFT;
+        else if(dir==`LEFT && ghost_left<=250) next_dir=`RIGHT;
+        else next_dir = dir;
     end
 
 
 
     always@(*) begin
         next_ghost_up = ghost_up;
+        next_ghost_left = ghost_left;
         if(trigger && stage_state==5) begin
             case(dir)
-                `LEFT:  next_ghost_left = ghost_left - 1;
-                `RIGHT: next_ghost_left = ghost_left + 1;
+                `LEFT: next_ghost_left = ghost_left - 3;
+                `RIGHT:next_ghost_left = ghost_left + 3;
+                `UP:   next_ghost_up = ghost_up - 3;
+                `DOWN: next_ghost_up = ghost_up + 3;
             endcase
-        end
-        else begin
-            next_ghost_left = ghost_left;
         end
     end
 
@@ -97,10 +95,10 @@ module ghost1_top_control(
     
     always@(*) begin
         if(stage_state==5) begin
-            if(ghost_up<=people_up+19 && people_up+19<=ghost_up+29 && dir==`LEFT && ghost_left+20<people_left+39) begin
+            if(ghost_up<=people_up+19 && people_up+19<=ghost_up+29 && dir==`LEFT && ghost_left<people_left+39 && ghost_left+29>people_left+39) begin
                 next_fail = 1;
             end
-            else if(ghost_up<=people_up+19 && people_up+19<=ghost_up+29 && dir==`RIGHT && ghost_left+30>people_left+20) begin
+            else if(ghost_up<=people_up+19 && people_up+19<=ghost_up+29 && dir==`RIGHT && ghost_left+29>people_left && ghost_left<people_left) begin
                 next_fail = 1;
             end
             else begin
@@ -134,13 +132,13 @@ module ghost2_top_control(
 
     reg [9:0] next_ghost_up;
     reg [9:0]  next_ghost_left;
-    reg dir, next_dir;
+    reg [1:0] dir, next_dir;
 
     reg IL;
     always@(posedge clk) begin
         if(rst) begin
             ghost_left <= 260;
-            ghost_up <= 65;
+            ghost_up <= 75;
             dir <= `DOWN;
         end
         else begin
@@ -156,9 +154,9 @@ module ghost2_top_control(
 
 
     always@(*) begin
-        if(dir==`DOWN && ghost_up<=191) next_dir=`DOWN;
-        else if(dir==`UP && ghost_up>=75) next_dir=`UP;
-        else next_dir = ~dir;
+        if(dir==`DOWN && ghost_up>=220) next_dir=`UP;
+        else if(dir==`UP && ghost_up<=65) next_dir=`DOWN;
+        else next_dir = dir;
     end
 
 
@@ -166,8 +164,8 @@ module ghost2_top_control(
         next_ghost_left = ghost_left;
         if(trigger && stage_state==5) begin
             case(dir)
-                `UP:   next_ghost_up = ghost_up - 1;
-                `DOWN: next_ghost_up = ghost_up + 1;
+                `UP:   next_ghost_up = ghost_up - 3;
+                `DOWN: next_ghost_up = ghost_up + 3;
             endcase    
         end
         else begin
@@ -190,7 +188,6 @@ module ghost2_top_control(
             trigger <= 0;
         end
     end
-
     /* ---------------------------------- fail ---------------------------------- */
     reg next_fail;
     always@(posedge clk) begin
@@ -200,10 +197,10 @@ module ghost2_top_control(
     
     always@(*) begin
         if(stage_state==5) begin
-            if(ghost_left<=people_left+19 && people_left+19<=ghost_left+29 && dir==`UP && ghost_up<people_up+19) begin
+            if(ghost_left<=people_left+19 && people_left+19<=ghost_left+29 && dir==`UP && ghost_up<people_up+39 && ghost_up+29>people_up+39) begin
                 next_fail = 1;
             end
-            else if(ghost_left<=people_left+19 && people_left+19<=ghost_left+29 && dir==`DOWN && ghost_up+29>people_up+20) begin
+            else if(ghost_left<=people_left+19 && people_left+19<=ghost_left+29 && dir==`DOWN && ghost_up+29>people_up && ghost_up<people_up) begin
                 next_fail = 1;
             end
             else begin

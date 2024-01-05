@@ -12,9 +12,6 @@
 `define O 14
 `define D 15
 
-
-
-
 module top(
     input clk,
     input rst,
@@ -39,7 +36,6 @@ module top(
     output wire KEY_OUT,
     output wire APPLE_OUT,
     output wire PASS_OUT,
-    
     output reg FAIL_OUT,
     output reg SUCCESS_OUT,
     output wire MOVEMENT_LOCK
@@ -47,6 +43,14 @@ module top(
     
 
 
+
+    // clk
+    wire clk_25MHz;  
+    clock_divider #(2) cd25(.clk(clk),.clk_div(clk_25MHz));
+
+    // 問題在這
+    // wire clk_22;  
+    // clock_divider #(22) cd22(.clk(clk),.clk_div(clk_22));
 
     // vga
     wire [9:0] x,y;
@@ -57,35 +61,19 @@ module top(
     wire [8:0] last_change;
     wire been_ready;
 
-    // clk
-    wire clk_25MHz;  
-    clock_divider #(2) cd25(.clk(clk),.clk_div(clk_25MHz));
   	
-
-    wire [15:0] password;
-
-    // 問題在這
-    // wire clk_22;  
-    // clock_divider #(22) cd22(.clk(clk),.clk_div(clk_22));
-
+    wire [15:0] SEVEN_SEGMENT;
 
     /* --------------------------------- states --------------------------------- */
     wire [2:0] stage_state;
     wire [2:0] chair_state;
     /* -------------------------------------------------------------------------- */
 
-
-
-
     /* ------------------------------ people signal ----------------------------- */
     wire people_dir;
     wire [9:0] people_up;
     wire [9:0] people_left;
-
-    // wire [11:0] true_people_pixel;
-    // assign true_people_pixel = (apple) ? people_pixel^12'hAAA : people_pixel;
     /* -------------------------------------------------------------------------- */
-
 
 
     /* ------------------------------ chair signal ------------------------------ */
@@ -101,6 +89,7 @@ module top(
     wire [9:0] ghost2_left;
     wire ghost1_fail;
     wire ghost2_fail;
+    wire [1:0] ghost1_dir;
     /* -------------------------------------------------------------------------- */
 
 
@@ -125,7 +114,7 @@ module top(
                           .stage_state(stage_state), .chair_state(chair_state),
                           .x(x), .y(y), 
                           .chair_up(chair_up),.chair_left(chair_left),
-                          .apple(apple), .FAIL(FAIL_OUT), .SUCCESS(SUCCESS_OUT),.CIN(CIN),
+                          .FAIL(FAIL_OUT), .SUCCESS(SUCCESS_OUT),.CIN(CIN),
                           .people_left(people_left), .people_up(people_up),.dir(people_dir));
 
     /* -------------------------------------------------------------------------- */
@@ -139,7 +128,7 @@ module top(
                         .valid(valid), .x(x), .y(y), 
                         .people_up(people_up),.people_left(people_left),  .people_dir(people_dir),
                         .chair_up(chair_up),.chair_left(chair_left),
-                        .ghost1_up(ghost1_up), .ghost1_left(ghost1_left), 
+                        .ghost1_up(ghost1_up), .ghost1_left(ghost1_left), .ghost1_dir(ghost1_dir),
                         .ghost2_up(ghost2_up), .ghost2_left(ghost2_left), 
                         .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
                         .stage_state(stage_state), .chair_state(chair_state),
@@ -148,8 +137,9 @@ module top(
                         .CIN(CIN), .KEY_IN(KEY_IN), .APPLE_IN(APPLE_IN), .PASS_IN(PASS_IN),
 
                         .KEY_OUT(KEY_OUT), .APPLE_OUT(APPLE_OUT), .PASS_OUT(PASS_OUT), .LOCK(MOVEMENT_LOCK), 
-                        .password(password),
-                        .vgaR(vgaRed),.vgaG(vgaGreen),.vgaB(vgaBlue)
+                        .SEVEN_SEGMENT(SEVEN_SEGMENT),
+                        .PIXEL({vgaRed,vgaGreen,vgaBlue})
+                        // .vgaR(vgaRed),.vgaG(vgaGreen),.vgaB(vgaBlue)
     );
 
     /* -------------------------------------------------------------------------- */
@@ -167,7 +157,7 @@ module top(
     ghost1_top_control b1(
         .clk(clk), .rst(rst),.stage_state(stage_state),
         .people_up(people_up), .people_left(people_left),
-        .ghost_up(ghost1_up),.ghost_left(ghost1_left), .fail(ghost1_fail)
+        .ghost_up(ghost1_up),.ghost_left(ghost1_left), .fail(ghost1_fail), .dir(ghost1_dir)
     );
     ghost2_top_control b2(
         .clk(clk), .rst(rst),.stage_state(stage_state),
@@ -205,84 +195,84 @@ module top(
         .clk(clk_25MHz)
     );
 
-    SevenSegment basys3_7_segment(.DISPLAY(DISPLAY),.DIGIT(DIGIT),.nums(password),.rst(rst),.clk(clk));
+    // SevenSegment basys3_7_segment(.DISPLAY(DISPLAY),.DIGIT(DIGIT),.nums(SEVEN_SEGMENT),.rst(rst),.clk(clk));
     
 endmodule
 
-module SevenSegment(
-	output reg [6:0] DISPLAY,
-	output reg [3:0] DIGIT,
-	input wire [15:0] nums,
-	input wire rst,
-	input wire clk
+// module SevenSegment(
+// 	output reg [6:0] DISPLAY,
+// 	output reg [3:0] DIGIT,
+// 	input wire [15:0] nums,
+// 	input wire rst,
+// 	input wire clk
 
-);
+// );
     
-    reg [15:0] clk_divider;
-    reg [3:0] display_num;
+//     reg [15:0] clk_divider;
+//     reg [3:0] display_num;
     
-    always @ (posedge clk, posedge rst) begin
-    	if (rst) begin
-    		clk_divider <= 15'b0;
-    	end else begin
-    		clk_divider <= clk_divider + 15'b1;
-    	end
-    end
+//     always @ (posedge clk, posedge rst) begin
+//     	if (rst) begin
+//     		clk_divider <= 15'b0;
+//     	end else begin
+//     		clk_divider <= clk_divider + 15'b1;
+//     	end
+//     end
     
-    always @ (posedge clk_divider[15], posedge rst) begin
-    	if (rst) begin
-    		display_num <= 4'b0000;
-    		DIGIT <= 4'b1111;
-    	end else begin
-    		case (DIGIT)
-    			4'b1110 : begin
-    					display_num <= nums[7:4];
-    					DIGIT <= 4'b1101;
-    				end
-    			4'b1101 : begin
-						display_num <= nums[11:8];
-						DIGIT <= 4'b1011;
-					end
-    			4'b1011 : begin
-						display_num <= nums[15:12];
-						DIGIT <= 4'b0111;
-					end
-    			4'b0111 : begin
-						display_num <= nums[3:0];
-						DIGIT <= 4'b1110;
-					end
-    			default : begin
-						display_num <= nums[3:0];
-						DIGIT <= 4'b1110;
-					end				
-    		endcase
-    	end
-    end
+//     always @ (posedge clk_divider[15], posedge rst) begin
+//     	if (rst) begin
+//     		display_num <= 4'b0000;
+//     		DIGIT <= 4'b1111;
+//     	end else begin
+//     		case (DIGIT)
+//     			4'b1110 : begin
+//     					display_num <= nums[7:4];
+//     					DIGIT <= 4'b1101;
+//     				end
+//     			4'b1101 : begin
+// 						display_num <= nums[11:8];
+// 						DIGIT <= 4'b1011;
+// 					end
+//     			4'b1011 : begin
+// 						display_num <= nums[15:12];
+// 						DIGIT <= 4'b0111;
+// 					end
+//     			4'b0111 : begin
+// 						display_num <= nums[3:0];
+// 						DIGIT <= 4'b1110;
+// 					end
+//     			default : begin
+// 						display_num <= nums[3:0];
+// 						DIGIT <= 4'b1110;
+// 					end				
+//     		endcase
+//     	end
+//     end
 
-    always @ (*) begin
-    	case (display_num)
-            `DASH: DISPLAY = 7'b011_1111;  
-			1 : DISPLAY = 7'b1111001;   //0001                                                
-			2 : DISPLAY = 7'b0100100;   //0010                                                
-			3 : DISPLAY = 7'b0110000;   //0011                                             
-			4 : DISPLAY = 7'b0011001;   //0100                                               
-			5 : DISPLAY = 7'b0010010;   //0101                                               
-			6 : DISPLAY = 7'b0000010;   //0110
+//     always @ (*) begin
+//     	case (display_num)
+//             `DASH: DISPLAY = 7'b011_1111;  
+// 			1 : DISPLAY = 7'b1111001;   //0001                                                
+// 			2 : DISPLAY = 7'b0100100;   //0010                                                
+// 			3 : DISPLAY = 7'b0110000;   //0011                                             
+// 			4 : DISPLAY = 7'b0011001;   //0100                                               
+// 			5 : DISPLAY = 7'b0010010;   //0101                                               
+// 			6 : DISPLAY = 7'b0000010;   //0110
 
-            `P: DISPLAY = 7'b000_1100;  //
-            `A: DISPLAY = 7'b000_1000;  //
-            `S: DISPLAY = 7'b001_0010;  //
-            `F: DISPLAY = 7'b000_1110;  //
-            `I: DISPLAY = 7'b111_1001;  //
-            `L: DISPLAY = 7'b100_0111;  //
-            `G: DISPLAY = 7'b000_0010;  //
-            `O: DISPLAY = 7'b100_0000;  //
-            `D: DISPLAY = 7'b010_0001;  //
-			default : DISPLAY = 7'b1111111;
-    	endcase
-    end
+//             `P: DISPLAY = 7'b000_1100;  //
+//             `A: DISPLAY = 7'b000_1000;  //
+//             `S: DISPLAY = 7'b001_0010;  //
+//             `F: DISPLAY = 7'b000_1110;  //
+//             `I: DISPLAY = 7'b111_1001;  //
+//             `L: DISPLAY = 7'b100_0111;  //
+//             `G: DISPLAY = 7'b000_0010;  //
+//             `O: DISPLAY = 7'b100_0000;  //
+//             `D: DISPLAY = 7'b010_0001;  //
+// 			default : DISPLAY = 7'b1111111;
+//     	endcase
+//     end
     
-endmodule
+// endmodule
 
 module KeyboardDecoder(
 	output reg [12:0] key_down,

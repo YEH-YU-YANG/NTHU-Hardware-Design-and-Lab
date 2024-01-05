@@ -37,7 +37,7 @@ module chair_top_control(
             // 0 -> 1
             if(chair_IL1 && 350<=chair_left+20 && chair_left+20<=420 && 10<=chair_up+20 && chair_up+20<=30) begin
                 chair_left <= 190;
-                chair_up <= 310;                    
+                chair_up <= 350;                    
                 chair_state <= 1;
                 chair_IL1 <= 0;
             end
@@ -50,6 +50,7 @@ module chair_top_control(
                 chair_IL2 <= 0;
             end
 
+
             else begin
                 chair_left  <= next_chair_left;
                 chair_up    <= next_chair_up;
@@ -58,18 +59,30 @@ module chair_top_control(
             if(chair_IL1!=1) chair_IL1 <= 1;
             if(chair_IL2!=1) chair_IL2 <= 1;
 
+
         end
     end
 
 
     always@(*) begin
 
-        if(been_ready && key_down[`F5]) begin
+        next_chair_left = chair_left;
+        next_chair_up = chair_up;
+
+        if(been_ready && key_down[`F5]) begin    
             
-            if(stage_state==2 && chair_up+20<=115) begin
-                next_chair_left = chair_left;
+            // push up to carbinet
+            if( stage_state==2 && chair_state==2 && chair_up+20<=115 &&
+                people_up+19-35<chair_up+39 && people_up+19>chair_up+39 && chair_left<people_left+19 && people_left+19<chair_left+39) begin
                 next_chair_up = chair_up;
             end
+
+            // push left to stair
+            else if( stage_state==7 && chair_state==7 && chair_left+5<=400 &&
+                people_left-5 < chair_left+39 && people_left + 40 - 1>chair_left+39 && chair_up<people_up+19 && people_up+19<chair_up+39) begin
+                next_chair_left = chair_left;
+            end
+
             else begin
                 
                 // push up
@@ -88,10 +101,7 @@ module chair_top_control(
             end
 
         end
-        else begin
-            next_chair_left = chair_left;
-            next_chair_up = chair_up;
-        end
+
     end
 
 endmodule

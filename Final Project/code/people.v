@@ -1,12 +1,14 @@
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
 
-`define F1 9'b0_0000_0101 // left  05 => 5  
-`define F2 9'b0_0000_0110 // right 06 => 6  
-`define F3 9'b0_0000_0100 // up    04 => 4  
-`define F4 9'b0_0000_1100 // down  0C => 12 
-`define F5 9'b0_0000_0011 // space 03 => 3  
-`define F6 9'b0_0000_1011 // space 0B => 11 
+`define F1  9'b0_0000_0101 // left  05 => 5  
+`define F2  9'b0_0000_0110 // right 06 => 6  
+`define F3  9'b0_0000_0100 // up    04 => 4  
+`define F4  9'b0_0000_1100 // down  0C => 12 
+`define F5  9'b0_0000_0011 // space 03 => 3 
+`define F6  9'b0_0000_1011 // 0B => 11 
+`define F9  9'b0_0000_0001 // 01 => 1 
+`define F10 9'b0_0000_1001 // 09 => 9
 
 module people_top_control(
     input clk,
@@ -25,7 +27,6 @@ module people_top_control(
     input [9:0] chair_up,
     input [9:0] chair_left,
     
-    input apple,
     input FAIL,
     input SUCCESS,
     input CIN,
@@ -77,7 +78,7 @@ module people_top_control(
                 end
 
                 // 6-> 0
-                else if(201<=people_left && people_left<=301 && 421<=people_up && people_up<=441) begin
+                else if(270<=people_left && people_left<=301 && 421<=people_up && people_up<=441) begin
                     people_left <= 250;
                     people_up <= 80;
                 end
@@ -97,7 +98,7 @@ module people_top_control(
                 
                 else if(381<=people_left && people_left<=391 && 306<=people_up && people_up<=346) begin
                     people_left <= 90;
-                    people_up <= people_up+19 - 20;
+                    people_up <= 350;
                 end
                 
                 // 3 -> 1
@@ -165,7 +166,7 @@ module people_top_control(
 
             else if(stage_state==6 && stage6_IL) begin
                 // 0 -> 6 
-                people_left <= 240;
+                people_left <= 300;
                 people_up <= 410;
             
                 dir <= next_dir;
@@ -196,38 +197,30 @@ module people_top_control(
             next_dir = dir;
         end
         else if(been_ready && key_down[last_change] == 1'b1) begin
-            
+
             next_people_left = people_left;
             next_people_up = people_up;
             next_dir = dir;
 
             if(key_down[`F3]) begin
-            // if(key_down[`key_w]) begin
-                // if(stage_state==chair_state && people_up+10 < chair_up+39 && people_up+39>=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_people_up = people_up;
-                // else next_people_up = people_up-2;
-                next_people_up = people_up-2;
+                next_people_up = people_up-1;
+                next_dir = dir;
             end
-
             if(key_down[`F4]) begin
-            // if(key_down[`key_s]) begin
-                // if(stage_state==chair_state && people_up+39-10 > chair_up && people_up<=chair_up &&chair_left<=people_left+19 && people_left+19<=chair_left+39) next_people_up = people_up;
-                // else next_people_up = people_up+2;
-                next_people_up = people_up+2;
+                next_people_up = people_up+1;
+                next_dir = dir;
             end
 
+          
             if(key_down[`F1]) begin
-            // if(key_down[`key_a]) begin
-                // if(stage_state==chair_state && people_left+10 < chair_left+39 && people_left + 40 - 1>=chair_left+39 && chair_up<=people_up+19 && people_up+19<=chair_up+39) next_people_left = people_left;
-                // else next_people_left = people_left-2;
-                next_people_left = people_left-2;
+                next_people_left = people_left-1;
+                next_people_up = people_up;
                 next_dir = `LEFT_DIR;
             end
 
             if(key_down[`F2]) begin
-            // if(key_down[`key_d]) begin
-                // if(stage_state==chair_state && people_left + 40 - 1-10 > chair_left && people_left<=chair_left && chair_up<=people_up+19 && people_up+19<=chair_up+39) next_people_left = people_left;
-                // else next_people_left = people_left+2;
-                next_people_left = people_left+2;  
+                next_people_left = people_left+1;  
+                next_people_up = people_up;
                 next_dir = `RIGHT_DIR;
             end
 
