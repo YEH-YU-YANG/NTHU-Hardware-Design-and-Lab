@@ -203,25 +203,6 @@ module top(
     );
 	/* -------------------------------------------------------------------------- */
    
-    /* ------------------------ memory address generator ------------------------ */
-    // mem_addr_gen m0(
-    //     .clk(clk_22),
-    //     .rst(rst),
-    //     .x(x), .y(y), 
-    //     .chair_up(chair_up),.chair_left(chair_left),
-    //     .ghost1_up(ghost1_up), .ghost1_left(ghost1_left), 
-    //     .ghost2_up(ghost2_up), .ghost2_left(ghost2_left),
-
-    //     // .carbinet_addr(carbinet_addr),
-    //     .key_addr(key_addr),
-    //     .chair_addr(chair_addr),
-    //     .ghost1_addr(ghost1_addr),
-    //     .ghost2_addr(ghost2_addr),
-    //     .apple_addr(apple_addr),
-    //     .people_addr(people_addr)
-    // );
-    /* -------------------------------------------------------------------------- */
-   
     KeyboardDecoder k(
         .key_down(key_down),
         .last_change(last_change),
@@ -455,21 +436,6 @@ module clock_divider #(
     assign next_num = num + 1;
     assign clk_div = num[n-1];
 endmodule
-
-// module debounce (
-// 	input wire clk,
-// 	input wire pb, 
-// 	output wire pb_debounced 
-//     );
-// 	reg [3:0] shift_reg; 
-
-// 	always @(posedge clk) begin
-// 		shift_reg[3:1] <= shift_reg[2:0];
-// 		shift_reg[0] <= pb;
-// 	end
-
-// 	assign pb_debounced = ((shift_reg == 4'b1111) ? 1'b1 : 1'b0);
-// endmodule
 
 module one_pulse (
     input wire clk,
