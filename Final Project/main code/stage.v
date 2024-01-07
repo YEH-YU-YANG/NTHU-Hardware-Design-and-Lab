@@ -1,9 +1,21 @@
+`define DASH 0
+`define P 7
+`define A 8
+`define S 9
+`define F 10
+`define I 11
+`define L 12
+`define G 13
+`define O 14
+`define D 15
+
 `define WALL_COLOR   12'hDCD 
 `define FLOOR_COLOR  12'h656
 `define DOOR_COLOR   12'h000
 `define BLUE_COLOR   12'h548
 `define PRISON_COLOR 12'h112
-// `define RED_COLOR 12'hE47
+`define TP_COLOR 12'h545
+`define PASSWORD_COLOR 12'h437
 
 `define F1  9'b0_0000_0101 // LEFT_DIR  05 => 5  
 `define F2  9'b0_0000_0110 // RIGHT_DIR 06 => 6  
@@ -13,6 +25,11 @@
 `define F6  9'b0_0000_1011 // 0B => 11 
 `define F9  9'b0_0000_0001 // 01 => 1 
 `define F10 9'b0_0000_1001 // 09 => 9
+
+`define KEY_W 9'b0_0001_1101  // 1D ->
+`define KEY_A 9'b0_0001_1100  // 1C ->
+`define KEY_S 9'b0_0001_1011  // 1B ->
+`define KEY_D 9'b0_0010_0011  // 23 ->
 
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
@@ -64,29 +81,23 @@ module stage_top_control(
     input SUCCESS,
     
     input CIN,
+    input TP,
     input KEY_IN,
     input APPLE_IN,
     input HINT_PASS_IN,
     input COLOR_PASS_IN,
     input PASS_IN,
-    // output reg hint_pass,
-    // output reg color_pass,
 
     output wire KEY_OUT,
     output wire APPLE_OUT,
     output wire HINT_PASS_OUT,
     output wire COLOR_PASS_OUT,
     output wire PASS_OUT,
-    // output wire CHAIR_BROKEN_OUT,
+
     output wire LOCK,
-
     output reg [15:0] SEVEN_SEGMENT,
-
     output reg [11:0] PIXEL
 
-    // output reg [3:0] vgaR,
-    // output reg [3:0] vgaG,
-    // output reg [3:0] vgaB
 );
 
     reg [3:0] vgaR;
@@ -100,13 +111,11 @@ module stage_top_control(
     always@(*) begin
         if(FAIL) begin
             PIXEL = {vgaR>>1,vgaG>>1,vgaB>>1};
-            // if(220<=x && x<=430 && 195<=y && y<=285)  PIXEL = `WALL_COLOR;
             if(230<=x && x<=430 && 175<=y && y<=245 && fail_pixel!=12'h000)  PIXEL = fail_pixel;
         end
         else if(SUCCESS) begin
             PIXEL = {vgaR>>1,vgaG>>1,vgaB>>1};
-            // if(220<=x && x<=430 && 195<=y && y<=285)  PIXEL = `WALL_COLOR;
-            if(230<=x && x<=430 && 180<=y && y<=245 && success_pixel!=12'h000)  PIXEL = success_pixel;
+            if(232<x && x<430 && 180<=y && y<=245 && success_pixel!=12'h000)  PIXEL = success_pixel;
         end
         else begin
             PIXEL = {vgaR,vgaG,vgaB};
@@ -203,8 +212,15 @@ module stage_top_control(
     end
 
     always@(*) begin
-        if(stage_state==0) begin
-            if(331<=people_left+19 && people_left<=401 && 10<=people_up+19 && people_up<=11) next_stage_state = 1;
+        if(TP && been_ready && key_down[`F1]) next_stage_state = 1;
+        else if(TP && been_ready && key_down[`F2]) next_stage_state = 2;
+        else if(TP && been_ready && key_down[`F5]) next_stage_state = 5;
+        else if(TP && been_ready && key_down[`F6]) next_stage_state = 6;
+        else if(TP && been_ready && key_down[`F9]) next_stage_state = 8;
+        else if(TP && been_ready && key_down[`F10]) next_stage_state = 0;
+
+        else if(stage_state==0) begin
+            if(331<=people_left+19 && people_left<=401 && 10<=people_up && people_up<=40) next_stage_state = 1;
             else if(KEY_OUT && 231<=people_left && people_left<=271 && 10<=people_up+19 && people_up<=61 && key_down[`F5]) next_stage_state = 6;
             else if(310<=people_left+19 && people_left+19<=340 && 340<=people_up+19 && people_up+19<=370 && key_down[`F5]) next_stage_state = 7;
             else next_stage_state = 0;
@@ -236,8 +252,8 @@ module stage_top_control(
         end
 
         else if(stage_state==5) begin
-            if(460<=people_left && people_left<=540 && 281<=people_up && people_up<=346) next_stage_state = 2;
-            if(370<=people_left && people_left<=440 && 220<=people_up+19 && people_up+19<=250 && been_ready && key_down[`F5]) next_stage_state = 8;
+            if(485<=people_left && people_left<=500 && 255<=people_up && people_up<=365) next_stage_state = 2;
+            else if(370<=people_left && people_left<=440 && 220<=people_up+19 && people_up+19<=250 && been_ready && key_down[`F5]) next_stage_state = 8;
             else next_stage_state = 5;
         end
         else if(stage_state==6) begin
@@ -268,7 +284,8 @@ module stage_top_control(
     end
     always@(*) begin
         if(stage_state==2 && chair_state==2 && key_down[`F10] && 
-        people_up < chair_up && chair_up<people_up+39 && people_up+39<=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_key = 1;
+            people_up < chair_up && chair_up<people_up+39 && 
+            people_up+39<=chair_up+39 && chair_left<=people_left+19 && people_left+19<=chair_left+39) next_key = 1;
         else next_key = 0;
     end
     /* -------------------------------------------------------------------------- */
@@ -293,7 +310,6 @@ module stage_top_control(
             next_apple = apple;
         end
     end
-
     /* -------------------------------------------------------------------------- */
 
     /* -------------------------------- hint_pass -------------------------------- */
@@ -335,8 +351,7 @@ module stage_top_control(
         if(rst) begin
             SEVEN_SEGMENT <= 0;
         end
-        else begin
-            
+        else begin    
             if(FAIL) begin
                 SEVEN_SEGMENT[15:12] <= `F; 
                 SEVEN_SEGMENT[11:8] <= `A;
@@ -350,7 +365,6 @@ module stage_top_control(
                 SEVEN_SEGMENT[3:0] <= `D;
             end
             else begin
-            
                 if (!PASS_OUT && CIN && !lock && been_ready && key_down[last_change] && 
                    ( (stage_state==6 && 370<=people_left && people_left<=420 && 50<=people_up && people_up<=135) || stage_state==7)) begin
                     SEVEN_SEGMENT <= {SEVEN_SEGMENT[11:0],key_num};
@@ -367,8 +381,7 @@ module stage_top_control(
                     SEVEN_SEGMENT[7:4] <= `DASH;
                     SEVEN_SEGMENT[3:0] <= `DASH;
                 end
-            end
-            
+            end    
         end
     end
 
@@ -408,106 +421,102 @@ module stage_top_control(
                     if(220<=x && x<=420 && 350<=y && y<=380) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
                 
                     // floor2
-                    if(220<=x && x<=420 && 380<=y && y<=480) {vgaR, vgaG, vgaB} = 12'hE47;
-                    // if(310<=x && x<=340 && 440<=y && y<=460) {vgaR, vgaG, vgaB} = 12'hE47;
+                    if(220<=x && x<=420 && 380<=y && y<=480) {vgaR, vgaG, vgaB} = `PASSWORD_COLOR;
+                   
+                    if(220<=x && x<=520) if(y==10) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    
-                    
+                    if(220<=x && x<=520) if(y==20) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==10) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==30) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==20) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==40) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==30) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==50) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==40) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==60) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==50) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==70) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==60) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==80) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==70) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==90) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==80) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==100) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==90) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==110) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==100) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==120) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==110) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==130) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==120) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==140) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==130) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==150) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==140) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==160) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==150) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==170) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==160) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==180) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==170) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==190) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==180) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==200) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==190) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==210) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==200) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==220) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==210) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==230) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==220) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==240) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==230) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==250) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==240) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==260) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==250) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==270) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==260) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==280) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==270) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==290) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==280) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==300) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==290) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==310) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==300) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==320) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==310) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==330) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==320) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==340) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==330) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==350) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==340) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==360) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==350) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==370) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==360) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==380) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==370) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==390) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==380) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==400) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==390) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==410) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==400) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==420) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==410) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==430) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==420) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==440) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==430) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==450) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==440) {vgaR, vgaG, vgaB} = 12'h767;
+                    if(220<=x && x<=520) if(y==460) {vgaR, vgaG, vgaB} = 12'h767;
 
-                    if(270<=x && x<=420) if(y==450) {vgaR, vgaG, vgaB} = 12'h767;
-
-                    if(270<=x && x<=420) if(y==460) {vgaR, vgaG, vgaB} = 12'h767;
-
-                    if(270<=x && x<=420) if(y==470) {vgaR, vgaG, vgaB} = 12'h767;
-
+                    if(220<=x && x<=520) if(y==470) {vgaR, vgaG, vgaB} = 12'h767;
+        
                     if(10<=y && y<=10+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -543,79 +552,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(20<=y && y<=20+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(20+10<y && y<=20+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(30<=y && y<=30+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(30+10<y && y<=30+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(40<=y && y<=40+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -651,79 +588,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(50<=y && y<=50+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(50+10<y && y<=50+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(60<=y && y<=60+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(60+10<y && y<=60+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(70<=y && y<=70+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -759,79 +624,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(80<=y && y<=80+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(80+10<y && y<=80+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(90<=y && y<=90+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(90+10<y && y<=90+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(100<=y && y<=100+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -867,79 +660,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(110<=y && y<=110+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(110+10<y && y<=110+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(120<=y && y<=120+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(120+10<y && y<=120+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(130<=y && y<=130+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -975,79 +696,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(140<=y && y<=140+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(140+10<y && y<=140+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(150<=y && y<=150+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(150+10<y && y<=150+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(160<=y && y<=160+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1083,79 +732,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(170<=y && y<=170+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(170+10<y && y<=170+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(180<=y && y<=180+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(180+10<y && y<=180+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(190<=y && y<=190+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1191,79 +768,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(200<=y && y<=200+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(200+10<y && y<=200+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(210<=y && y<=210+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(210+10<y && y<=210+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(220<=y && y<=220+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1299,79 +804,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(230<=y && y<=230+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(230+10<y && y<=230+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(240<=y && y<=240+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(240+10<y && y<=240+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(250<=y && y<=250+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1407,79 +840,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(260<=y && y<=260+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(260+10<y && y<=260+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(270<=y && y<=270+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(270+10<y && y<=270+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(280<=y && y<=280+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1515,79 +876,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(290<=y && y<=290+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(290+10<y && y<=290+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(300<=y && y<=300+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(300+10<y && y<=300+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(310<=y && y<=310+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1623,79 +912,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(320<=y && y<=320+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(320+10<y && y<=320+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(330<=y && y<=330+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(330+10<y && y<=330+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(340<=y && y<=340+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1731,79 +948,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(350<=y && y<=350+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(350+10<y && y<=350+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(360<=y && y<=360+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(360+10<y && y<=360+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(370<=y && y<=370+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1839,79 +984,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(380<=y && y<=380+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(380+10<y && y<=380+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(390<=y && y<=390+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(390+10<y && y<=390+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(400<=y && y<=400+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -1947,79 +1020,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(410<=y && y<=410+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(410+10<y && y<=410+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(420<=y && y<=420+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(420+10<y && y<=420+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(430<=y && y<=430+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -2055,79 +1056,7 @@ module stage_top_control(
                         if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
-
-                    if(440<=y && y<=440+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(440+10<y && y<=440+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
-                    if(450<=y && y<=450+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-                    if(450+10<y && y<=450+20) begin
-                        if(x==220) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==240) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==260) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==440) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==460) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==480) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==500) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
-
+        
                     if(460<=y && y<=460+10) begin
                         if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
                         if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
@@ -2164,34 +1093,17 @@ module stage_top_control(
                         if(x==520) {vgaR, vgaG, vgaB} = 12'h767;
                     end
 
-                    if(470<=y && y<=470+10) begin
-                        if(x==230) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==250) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==430) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==450) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==470) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==490) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==510) {vgaR, vgaG, vgaB} = 12'h767;
-                    end
 
                     // black block
                     if(320<=x && x<=350 && 10<=y && y<=145)   {vgaR, vgaG, vgaB} = 12'h000;
                     if(420<=x && x<=520 && 10<=y && y<=150)   {vgaR, vgaG, vgaB} = 12'h000;
-                    if(420<=x && x<=520 && 350<=y && y<=460)   {vgaR, vgaG, vgaB} = 12'h000;
-                    if(340<=x && x<=420 && 440<=y && y<=460)   {vgaR, vgaG, vgaB} = 12'h000;
-                    if(220<=x && x<=310 && 440<=y && y<=460)   {vgaR, vgaG, vgaB} = 12'h000;
+                    if(420<=x && x<=520 && 350<=y && y<=480)   {vgaR, vgaG, vgaB} = 12'h000;
+                    // if(340<=x && x<=420 && 440<=y && y<=460)   {vgaR, vgaG, vgaB} = 12'h000;
+                    // if(220<=x && x<=310 && 440<=y && y<=460)   {vgaR, vgaG, vgaB} = 12'h000;
 
-                    // if(220<=x && x<=310 && 350<=y && y<=380)   {vgaR, vgaG, vgaB} = 12'h000;
+                    if(220<=x && x<=310 && 350<=y && y<=380)   {vgaR, vgaG, vgaB} = 12'h000;
                     if(!PASS_OUT && !COLOR_PASS_OUT && 310<=x && x<=340 && 370<=y && y<=380)   {vgaR, vgaG, vgaB} = 12'h000;
-                    // if(340<=x && x<=420 && 350<=y && y<=380)   {vgaR, vgaG, vgaB} = 12'h000;
+                    if(340<=x && x<=420 && 350<=y && y<=380)   {vgaR, vgaG, vgaB} = 12'h000;
 
 
 
@@ -2247,8 +1159,11 @@ module stage_top_control(
                     if(80<=x && x<=130 && 285<=y && y<=400) {vgaR, vgaG, vgaB} = 12'h656;
                     
                     // hint field
-                    if(130<=x && x<=210 && 250<=y && y<=290) {vgaR, vgaG, vgaB} = 12'h767;
-
+                    if(130<=x && x<=210 && 100<=y && y<=140) {vgaR, vgaG, vgaB} = `TP_COLOR;
+                    
+                    // hint field
+                    if(130<=x && x<=210 && 250<=y && y<=290) {vgaR, vgaG, vgaB} = `TP_COLOR;
+                    
                     // horizental floor line
                     if(80<=x && x<=280) begin            
                         if (y==110) {vgaR, vgaG, vgaB} = 12'h767;
@@ -3075,7 +1990,9 @@ module stage_top_control(
                     if(350<=x && x<=470 && 365<=y && y<=420)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
                     if(370<=x && x<=420 && 155<=y && y<=250)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
                     if(400<=x && x<=470 && 160<=y && y<=210)  {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
-                
+
+                    // tp to 8
+                    if(370<=x && x<=420 && 220<=y && y<=250)  {vgaR, vgaG, vgaB} = `TP_COLOR;
                     
 
                     if(200<=x && x<=500) if(y==10) {vgaR, vgaG, vgaB} = 12'h767;
@@ -3659,9 +2576,6 @@ module stage_top_control(
                     if(300<=x && x<=350 && (y==210||y==211)) {vgaR, vgaG, vgaB} = 12'h545;
                     if(350<=x && x<=370 && (y==325||y==326)) {vgaR, vgaG, vgaB} = 12'h545;
                     if(420<=x && x<=500 && (y==325||y==326)) {vgaR, vgaG, vgaB} = 12'h545;
-
-                    // tp to 8
-                    if(370<=x && x<=420 && 220<=y && y<=250)  {vgaR, vgaG, vgaB} = 12'h878;
 
                     // black block 
                     if(200<=x && x<=250 && 10<=y && y<=85) {vgaR, vgaG, vgaB} = 12'h000;
@@ -14914,7 +13828,9 @@ module stage_top_control(
                         if(270<=x && x<=420 && 30<=y && y<=470) {vgaR, vgaG, vgaB} = `FLOOR_COLOR;
 
 
-                      
+                        // input SEVEN_SEGMENT field
+                        if(370<=x && x<=420 && 85<=y && y<=135) {vgaR, vgaG, vgaB} = `PASSWORD_COLOR;
+
                         if(270<=x && x<=420) if(y==30) {vgaR, vgaG, vgaB} = 12'h767;
 
                         if(270<=x && x<=420) if(y==40) {vgaR, vgaG, vgaB} = 12'h767;
@@ -14989,6 +13905,20 @@ module stage_top_control(
 
                         if(270<=x && x<=420) if(y==390) {vgaR, vgaG, vgaB} = 12'h767;
 
+                        if(270<=x && x<=420) if(y==400) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==410) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==420) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==430) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==440) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==450) {vgaR, vgaG, vgaB} = 12'h767;
+
+                        if(270<=x && x<=420) if(y==460) {vgaR, vgaG, vgaB} = 12'h767;
+        
                         if(30<=y && y<=30+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15009,7 +13939,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(60<=y && y<=60+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15030,7 +13960,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(90<=y && y<=90+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15051,7 +13981,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(120<=y && y<=120+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15072,7 +14002,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(150<=y && y<=150+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15093,7 +14023,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(180<=y && y<=180+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15114,7 +14044,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(210<=y && y<=210+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15135,7 +14065,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(240<=y && y<=240+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15156,7 +14086,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(270<=y && y<=270+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15177,7 +14107,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(300<=y && y<=300+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15198,7 +14128,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(330<=y && y<=330+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15219,7 +14149,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(360<=y && y<=360+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15240,7 +14170,7 @@ module stage_top_control(
                             if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
+        
                         if(390<=y && y<=390+10) begin
                             if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
@@ -15251,30 +14181,68 @@ module stage_top_control(
                             if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
                             if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
                         end
-
-
-                        // black block
-                        if(340<=x && x<=420 && 280<=y && y<=350) {vgaR, vgaG, vgaB} = 12'h000;
-                        if(270<=x && x<=340 && 30<=y && y<=120) {vgaR, vgaG, vgaB} = 12'h000;
-
-                        // input SEVEN_SEGMENT field
-                        if(370<=x && x<=420 && 85<=y && y<=135) {vgaR, vgaG, vgaB} = 12'hE47;
-
-                        if(x==380 && 95<=y && y<=125) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==410 && 95<=y && y<=125) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(380<=x && x<=410 && y==95) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(380<=x && x<=410 && y==125){vgaR, vgaG, vgaB} = 12'h767;
-
-                        if(x==390 && 105<=y && y<=115) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(x==400 && 105<=y && y<=115) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(390<=x && x<=400 && y==105) {vgaR, vgaG, vgaB} = 12'h767;
-                        if(390<=x && x<=400 && y==115) {vgaR, vgaG, vgaB} = 12'h767;
+                        if(390+10<y && y<=390+20) begin
+                            if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
+                        end
+        
+                        if(420<=y && y<=420+10) begin
+                            if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
+                        end
+                        if(420+10<y && y<=420+20) begin
+                            if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
+                        end
+        
+                        if(450<=y && y<=450+10) begin
+                            if(x==270) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==290) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==310) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==330) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==350) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==370) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==390) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==410) {vgaR, vgaG, vgaB} = 12'h767;
+                        end
+                        if(450+10<y && y<=450+20) begin
+                            if(x==280) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==300) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==320) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==340) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==360) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==380) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==400) {vgaR, vgaG, vgaB} = 12'h767;
+                            if(x==420) {vgaR, vgaG, vgaB} = 12'h767;
+                        end
 
                         // wall
                         if(340<=x && x<=420 && 35<=y && y<=85)   {vgaR, vgaG, vgaB} = `WALL_COLOR;
                         // wall
                         if(270<=x && x<=340 && 120<=y && y<=160)   {vgaR, vgaG, vgaB} = `WALL_COLOR;
                         
+                        // black block
+                        if(340<=x && x<=420 && 280<=y && y<=355) {vgaR, vgaG, vgaB} = 12'h000;
+                        if(270<=x && x<=340 && 30<=y && y<=120) {vgaR, vgaG, vgaB} = 12'h000;
+
                         // arrow 6 to 0
                         if(308<=x && x<=332 && 380<=y && y<=420 && arrow_6to0!=12'hFFF) {vgaR, vgaG, vgaB} = arrow_6to0;
 
@@ -15312,7 +14280,7 @@ module stage_top_control(
                 end
                 8: begin
                     {vgaR, vgaG, vgaB} = 12'h000;
-                    if(240<=x && x<=400 && 40<=y && y<=440) {vgaR, vgaG, vgaB} = big_card_pixel;
+                    if(242<x && x<=400 && 40<=y && y<=440) {vgaR, vgaG, vgaB} = big_card_pixel;
                 end
             endcase
         end
@@ -15321,4 +14289,3 @@ module stage_top_control(
     /* -------------------------------------------------------------------------- */
 
 endmodule
-

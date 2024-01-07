@@ -14,7 +14,8 @@
 `define DOOR_COLOR   12'h000
 `define BLUE_COLOR   12'h548
 `define PRISON_COLOR 12'h112
-// `define RED_COLOR 12'hE47
+`define TP_COLOR 12'h545
+`define PASSWORD_COLOR 12'h437
 
 `define F1  9'b0_0000_0101 // LEFT_DIR  05 => 5  
 `define F2  9'b0_0000_0110 // RIGHT_DIR 06 => 6  
@@ -24,11 +25,11 @@
 `define F6  9'b0_0000_1011 // 0B => 11 
 `define F9  9'b0_0000_0001 // 01 => 1 
 `define F10 9'b0_0000_1001 // 09 => 9
+
 `define KEY_W 9'b0_0001_1101  // 1D ->
 `define KEY_A 9'b0_0001_1100  // 1C ->
 `define KEY_S 9'b0_0001_1011  // 1B ->
 `define KEY_D 9'b0_0010_0011  // 23 ->
-
 
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
@@ -52,6 +53,7 @@ module top(
     inout wire PS2_DATA,
     inout wire PS2_CLK,
     input CIN,
+    input TP,
 
     input KEY_IN,
     input APPLE_IN,
@@ -79,16 +81,9 @@ module top(
     output wire MOVEMENT_LOCK
 );
     
-
-
-
     // clk
     wire clk_25MHz;  
     clock_divider #(2) cd25(.clk(clk),.clk_div(clk_25MHz));
-
-    // 問題在這
-    // wire clk_22;  
-    // clock_divider #(22) cd22(.clk(clk),.clk_div(clk_22));
 
     // vga
     wire [9:0] x,y;
@@ -152,7 +147,7 @@ module top(
                           .stage_state(stage_state), .chair_state(chair_state),
                           .x(x), .y(y), 
                           .chair_up(chair_up),.chair_left(chair_left),
-                          .FAIL(FAIL_OUT), .SUCCESS(SUCCESS_OUT),.CIN(CIN),
+                          .FAIL(FAIL_OUT), .SUCCESS(SUCCESS_OUT),.CIN(CIN), .TP(TP),
                           .people_left(people_left), .people_up(people_up),.dir(people_dir));
 
     /* -------------------------------------------------------------------------- */
@@ -171,7 +166,7 @@ module top(
                         .key_down(key_down), .last_change(last_change), .been_ready(been_ready),
                         .stage_state(stage_state), .chair_state(chair_state),
                         .FAIL(FAIL_OUT),.SUCCESS(SUCCESS_OUT),
-                        .CIN(CIN), .KEY_IN(KEY_IN), .APPLE_IN(APPLE_IN), .HINT_PASS_IN(HINT_PASS_IN), .COLOR_PASS_IN(COLOR_PASS_IN), .PASS_IN(PASS_IN), 
+                        .CIN(CIN), .TP(TP), .KEY_IN(KEY_IN), .APPLE_IN(APPLE_IN), .HINT_PASS_IN(HINT_PASS_IN), .COLOR_PASS_IN(COLOR_PASS_IN), .PASS_IN(PASS_IN), 
 
                         .KEY_OUT(KEY_OUT), .APPLE_OUT(APPLE_OUT), .HINT_PASS_OUT(HINT_PASS_OUT), .COLOR_PASS_OUT(COLOR_PASS_OUT), .PASS_OUT(PASS_OUT), .LOCK(MOVEMENT_LOCK), 
                         .SEVEN_SEGMENT(SEVEN_SEGMENT),

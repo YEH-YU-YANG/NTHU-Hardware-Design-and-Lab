@@ -14,7 +14,8 @@
 `define DOOR_COLOR   12'h000
 `define BLUE_COLOR   12'h548
 `define PRISON_COLOR 12'h112
-// `define RED_COLOR 12'hE47
+`define TP_COLOR 12'h545
+`define PASSWORD_COLOR 12'h437
 
 `define F1  9'b0_0000_0101 // LEFT_DIR  05 => 5  
 `define F2  9'b0_0000_0110 // RIGHT_DIR 06 => 6  
@@ -24,6 +25,11 @@
 `define F6  9'b0_0000_1011 // 0B => 11 
 `define F9  9'b0_0000_0001 // 01 => 1 
 `define F10 9'b0_0000_1001 // 09 => 9
+
+`define KEY_W 9'b0_0001_1101  // 1D ->
+`define KEY_A 9'b0_0001_1100  // 1C ->
+`define KEY_S 9'b0_0001_1011  // 1B ->
+`define KEY_D 9'b0_0010_0011  // 23 ->
 
 `define LEFT_DIR 0
 `define RIGHT_DIR 1
@@ -99,43 +105,28 @@ module chair_top_control(
                 chair_state <= 5;
                 chair_IL5 <= 0;
             end
-
-
             else begin
                 chair_left  <= next_chair_left;
                 chair_up    <= next_chair_up;
             end
-
+            
             if(chair_IL1!=1) chair_IL1 <= 1;
             if(chair_IL2!=1) chair_IL2 <= 1;
             if(chair_IL5!=1) chair_IL5 <= 1;
-
-
         end
     end
 
 
     always@(*) begin
-
         next_chair_left = chair_left;
         next_chair_up = chair_up;
-
         if(been_ready && key_down[`F5]) begin    
-            
             // push UP_DIR to carbinet
             if( stage_state==2 && chair_state==2 && chair_up+20<=115 &&
                 people_up+19-35<chair_up+39 && people_up+19>chair_up+39 && chair_left<people_left+19 && people_left+19<chair_left+39) begin
                 next_chair_up = chair_up;
             end
-
-            // push LEFT_DIR to stair
-            else if( stage_state==7 && chair_state==7 && chair_left+5<=400 &&
-                people_left-5 < chair_left+39 && people_left + 40 - 1>chair_left+39 && chair_up<people_up+19 && people_up+19<chair_up+39) begin
-                next_chair_left = chair_left;
-            end
-
             else begin
-                
                 // push UP_DIR
                 if(people_up+19-35<chair_up+39 && people_up+19>chair_up+39 && chair_left<people_left+19 && people_left+19<chair_left+39) next_chair_up = chair_up-5;
                 // push DOWN_DIR 
@@ -147,12 +138,8 @@ module chair_top_control(
                 // push RIGHT_DIR
                 else if(people_left + 40 - 1+5 > chair_left && people_left<chair_left && chair_up<people_up+19&& people_up+19<chair_up+39) next_chair_left = chair_left+5;
                 else next_chair_left = chair_left;
-
-
             end
-
         end
-
     end
 
 endmodule
