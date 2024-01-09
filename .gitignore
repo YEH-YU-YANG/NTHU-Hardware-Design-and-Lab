@@ -16,3 +16,13 @@
 # Ignore all local history of files
 .history
 .ionide
+
+Demo1/
+
+XPR/
+
+line.txt
+circle.txt
+
+*.pptx
+*.docx
