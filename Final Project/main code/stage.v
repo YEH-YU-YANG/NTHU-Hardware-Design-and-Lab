@@ -1895,13 +1895,9 @@ module stage_top_control(
                     // arrow 2 to 5
                     if(230<=x && x<=270 && 248<=y && y<=272 && arrow_2to5!=12'hFFF) {vgaR, vgaG, vgaB} = arrow_2to5;
 
-                    // carpet
-                    // if(260<x && x<=400 && 116<=y && y<=197) {vgaR, vgaG, vgaB} = carpet_pixel;
-
                     // carbinet  
                     if(330<=x && x<=400 && 45<=y && y<115) {vgaR, vgaG, vgaB} = carbinet_pixel;  
-
-                    
+         
                     // key
                     if(!KEY_OUT && 360<=x && x<=380 && 45<=y && y<=65 && key_pixel!=12'h000) {vgaR, vgaG, vgaB} = key_pixel;  
 
@@ -1913,6 +1909,7 @@ module stage_top_control(
                         people_up   < y && y < people_up+39  && people_pixel!=12'h000) begin
                         {vgaR, vgaG, vgaB} = people_pixel;
                     end
+                    
                 end
                 3:  begin
                     {vgaR, vgaG, vgaB} = `WALL_COLOR;
