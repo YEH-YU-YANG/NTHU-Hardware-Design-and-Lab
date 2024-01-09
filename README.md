@@ -67,3 +67,15 @@ board.
 * Getting familiar with the Pmod connectors for external devices
 * Getting familiar with the 3-way track sensor and ultrasonic sensor
 * Learning to control typical DC motors via PWM signals
+
+## Final Project
+
+
+`Idea`: **密室逃脫 video game** <br>
+`Demo Link`: https://youtu.be/Cbd7Qan4PT4 <br>
+`Proposal 連結`: [點我](https://github.com/YEH-YU-YANG/Hardware-Design-and-Lab/blob/main/Final%20Project/Group37_proposal.pdf) <br>
+`Report 連結`: [點我](https://github.com/YEH-YU-YANG/Hardware-Design-and-Lab/blob/main/Final%20Project/Group37_report.pdf) <br>
+
+
+資源使用量
+![](https://github.com/YEH-YU-YANG/Hardware-Design-and-Lab/blob/da98191517d190d6fbc75179674b6d5f8b6548f5/Final%20Project/picture/picture/utilization.png)
