@@ -77,5 +77,5 @@ board.
 `Report 連結`: [點我](https://github.com/YEH-YU-YANG/Hardware-Design-and-Lab/blob/main/Final%20Project/Group37_report.pdf) <br>
 
 
-資源使用量
+資源使用量 <br>
 ![](https://github.com/YEH-YU-YANG/Hardware-Design-and-Lab/blob/da98191517d190d6fbc75179674b6d5f8b6548f5/Final%20Project/picture/picture/utilization.png)
