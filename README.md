@@ -1,7 +1,7 @@
 # NTHU-Hardware-Design-and-Lab
 
 Prof : C.T Huang <br>
-Semester : 2023 fall
+Semester : 2023 
 
 This repository aims to store codes and reports for all hardware design and lab homeworks.
 
